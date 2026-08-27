@@ -31,7 +31,7 @@ class PropertySearch extends Widget_Base {
     }
 
     public function get_keywords(): array {
-        return [ 'zabun', 'property', 'search', 'filter', 'real estate', 'bar' ];
+        return [ 'zabun', 'property', 'search', 'filter', 'real estate', 'bar', 'hero' ];
     }
 
     protected function register_controls(): void {
@@ -59,7 +59,7 @@ class PropertySearch extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 1. Search Bar Container
+           TAB STYLE: 1. Hero Search Container
            ========================================================================== */
         $this->start_controls_section(
             'section_style_container',
@@ -74,7 +74,7 @@ class PropertySearch extends Widget_Base {
             [
                 'name'     => 'bar_background',
                 'types'    => [ 'classic', 'gradient' ],
-                'selector' => '{{WRAPPER}} .zabun-search-bar',
+                'selector' => '{{WRAPPER}} .zabun-search-hero',
             ]
         );
 
@@ -82,7 +82,7 @@ class PropertySearch extends Widget_Base {
             Group_Control_Border::get_type(),
             [
                 'name'     => 'bar_border',
-                'selector' => '{{WRAPPER}} .zabun-search-bar',
+                'selector' => '{{WRAPPER}} .zabun-search-hero',
             ]
         );
 
@@ -93,19 +93,7 @@ class PropertySearch extends Widget_Base {
                 'type'       => Controls_Manager::DIMENSIONS,
                 'size_units' => [ 'px', '%' ],
                 'selectors'  => [
-                    '{{WRAPPER}} .zabun-search-bar' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
-                ],
-            ]
-        );
-
-        $this->add_responsive_control(
-            'bar_padding',
-            [
-                'label'      => __( 'Padding', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', 'em' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-search-bar' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-search-hero' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
                 ],
             ]
         );
@@ -114,19 +102,86 @@ class PropertySearch extends Widget_Base {
             Group_Control_Box_Shadow::get_type(),
             [
                 'name'     => 'bar_shadow',
-                'selector' => '{{WRAPPER}} .zabun-search-bar',
+                'selector' => '{{WRAPPER}} .zabun-search-hero',
             ]
         );
 
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 2. Form Labels & Input Fields
+           TAB STYLE: 2. Status Tabs
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_tabs',
+            [
+                'label' => __( 'Status Tabs', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'tab_bg',
+            [
+                'label'     => __( 'Tab Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-status-tabs button' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'tab_color',
+            [
+                'label'     => __( 'Tab Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-status-tabs button' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'tab_active_bg',
+            [
+                'label'     => __( 'Active Tab Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-status-tabs button.active' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'tab_active_color',
+            [
+                'label'     => __( 'Active Tab Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-status-tabs button.active' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'tab_typography',
+                'label'    => __( 'Tab Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-status-tabs button',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 3. Form Labels & Input Fields
            ========================================================================== */
         $this->start_controls_section(
             'section_style_fields',
             [
-                'label' => __( 'Form Inputs & Selects', 'zabun-connect' ),
+                'label' => __( 'Inputs & Dropdowns', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
@@ -137,7 +192,7 @@ class PropertySearch extends Widget_Base {
                 'label'     => __( 'Label Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-form-field label' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-field label, {{WRAPPER}} .zabun-sort-line label' => 'color: {{VALUE}};',
                 ],
             ]
         );
@@ -147,49 +202,42 @@ class PropertySearch extends Widget_Base {
             [
                 'name'     => 'label_typography',
                 'label'    => __( 'Label Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-form-field label',
+                'selector' => '{{WRAPPER}} .zabun-field label, {{WRAPPER}} .zabun-sort-line label',
             ]
         );
 
         $this->add_control(
-            'input_bg_color',
-            [
-                'label'     => __( 'Input Background Color', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'separator' => 'before',
-                'selectors' => [
-                    '{{WRAPPER}} .zabun-form-field input, {{WRAPPER}} .zabun-form-field select' => 'background-color: {{VALUE}};',
-                ],
-            ]
-        );
-
-        $this->add_control(
-            'input_text_color',
+            'input_color',
             [
                 'label'     => __( 'Input Text Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-form-field input, {{WRAPPER}} .zabun-form-field select' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-control' => 'color: {{VALUE}};',
                 ],
             ]
         );
 
         $this->add_group_control(
-            Group_Control_Border::get_type(),
+            Group_Control_Typography::get_type(),
             [
-                'name'     => 'input_border',
-                'selector' => '{{WRAPPER}} .zabun-form-field input, {{WRAPPER}} .zabun-form-field select',
+                'name'     => 'input_typography',
+                'label'    => __( 'Input Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-control',
             ]
         );
 
-        $this->add_responsive_control(
-            'input_radius',
+        $this->add_control(
+            'divider_color',
             [
-                'label'      => __( 'Input Border Radius', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', '%' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-form-field input, {{WRAPPER}} .zabun-form-field select' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                'label'     => __( 'Field Dividers Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-hero-row .zabun-field' => 'border-right-color: {{VALUE}}; border-bottom-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-status-tabs'          => 'border-bottom-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-status-tabs button'   => 'border-right-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-btn-more'             => 'border-left-color: {{VALUE}};',
                 ],
             ]
         );
@@ -197,12 +245,12 @@ class PropertySearch extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 3. Submit Button
+           TAB STYLE: 4. Search Button
            ========================================================================== */
         $this->start_controls_section(
             'section_style_button',
             [
-                'label' => __( 'Search Button', 'zabun-connect' ),
+                'label' => __( 'Search & Action Buttons', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
@@ -210,10 +258,10 @@ class PropertySearch extends Widget_Base {
         $this->add_control(
             'btn_bg_color',
             [
-                'label'     => __( 'Button Background Color', 'zabun-connect' ),
+                'label'     => __( 'Search Button Background', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-search-submit' => 'background-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-btn-search' => 'background-color: {{VALUE}};',
                 ],
             ]
         );
@@ -221,10 +269,10 @@ class PropertySearch extends Widget_Base {
         $this->add_control(
             'btn_bg_hover_color',
             [
-                'label'     => __( 'Button Hover Background Color', 'zabun-connect' ),
+                'label'     => __( 'Search Button Hover Background', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-search-submit:hover' => 'background-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-btn-search:hover' => 'background-color: {{VALUE}};',
                 ],
             ]
         );
@@ -232,10 +280,10 @@ class PropertySearch extends Widget_Base {
         $this->add_control(
             'btn_text_color',
             [
-                'label'     => __( 'Button Text Color', 'zabun-connect' ),
+                'label'     => __( 'Search Button Text Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-search-submit' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-btn-search' => 'color: {{VALUE}};',
                 ],
             ]
         );
@@ -245,30 +293,53 @@ class PropertySearch extends Widget_Base {
             [
                 'name'     => 'btn_typography',
                 'label'    => __( 'Button Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-search-submit',
+                'selector' => '{{WRAPPER}} .zabun-btn-search',
             ]
         );
 
-        $this->add_responsive_control(
-            'btn_radius',
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 5. More Filters Drawer
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_drawer',
             [
-                'label'      => __( 'Button Border Radius', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', '%' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-search-submit' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                'label' => __( 'Expanded Drawer', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'drawer_bg',
+            [
+                'label'     => __( 'Drawer Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-expanded-drawer' => 'background-color: {{VALUE}};',
                 ],
             ]
         );
 
-        $this->add_responsive_control(
-            'btn_padding',
+        $this->add_control(
+            'btngroup_active_bg',
             [
-                'label'      => __( 'Button Padding', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', 'em' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-search-submit' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                'label'     => __( 'Filter Buttons Active Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-btngroup button.active' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'btngroup_active_color',
+            [
+                'label'     => __( 'Filter Buttons Active Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-btngroup button.active' => 'color: {{VALUE}} !important;',
                 ],
             ]
         );

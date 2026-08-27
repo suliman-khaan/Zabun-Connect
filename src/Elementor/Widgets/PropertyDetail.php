@@ -8,6 +8,7 @@ use Elementor\Group_Control_Typography;
 use Elementor\Group_Control_Border;
 use Elementor\Group_Control_Box_Shadow;
 use Elementor\Group_Control_Background;
+use Elementor\Icons_Manager;
 use ZabunConnect\Shortcodes\ShortcodesHandler;
 
 defined( 'ABSPATH' ) || exit;
@@ -31,12 +32,12 @@ class PropertyDetail extends Widget_Base {
     }
 
     public function get_keywords(): array {
-        return [ 'zabun', 'property', 'single', 'detail', 'real estate', 'facts', 'gallery' ];
+        return [ 'zabun', 'property', 'single', 'detail', 'real estate', 'facts', 'gallery', 'specs' ];
     }
 
     protected function register_controls(): void {
         /* ==========================================================================
-           TAB CONTENT
+           TAB CONTENT: Configuration
            ========================================================================== */
         $this->start_controls_section(
             'section_content',
@@ -51,7 +52,7 @@ class PropertyDetail extends Widget_Base {
             [
                 'label'       => __( 'Specific Property Reference / ID', 'zabun-connect' ),
                 'type'        => Controls_Manager::TEXT,
-                'placeholder' => __( 'e.g. ZAB-1001 or numeric ID', 'zabun-connect' ),
+                'placeholder' => __( 'e.g. ZB-48213 or numeric ID', 'zabun-connect' ),
                 'description' => __( 'Leave empty to automatically pull from URL query parameter (?property_id=XYZ)', 'zabun-connect' ),
             ]
         );
@@ -59,63 +60,229 @@ class PropertyDetail extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 1. Header & Price Block
+           TAB CONTENT: Custom Icons / SVGs
            ========================================================================== */
         $this->start_controls_section(
-            'section_style_header',
+            'section_custom_icons',
             [
-                'label' => __( 'Header & Price', 'zabun-connect' ),
+                'label' => __( 'Custom Icons / SVGs', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_pin',
+            [
+                'label'       => __( 'Location Pin Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_beds',
+            [
+                'label'       => __( 'Bedrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_baths',
+            [
+                'label'       => __( 'Bathrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_area',
+            [
+                'label'       => __( 'Surface / Area Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_check',
+            [
+                'label'       => __( 'Feature Checkmark Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Checkmark icon displayed in features list.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB CONTENT: Agent & Sidebar Actions
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_agent_settings',
+            [
+                'label' => __( 'Sidebar Agent & Actions', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'agent_name',
+            [
+                'label'       => __( 'Agent Name', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => __( 'Leave empty to pull from CRM or site name', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'agent_role',
+            [
+                'label'   => __( 'Agent Role / Subtitle', 'zabun-connect' ),
+                'type'    => Controls_Manager::TEXT,
+                'default' => __( 'Listing agent', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'agent_phone',
+            [
+                'label'       => __( 'Agent Phone', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => '+32 2 555 12 34',
+            ]
+        );
+
+        $this->add_control(
+            'agent_email',
+            [
+                'label'       => __( 'Agent Email', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => 'agent@example.com',
+            ]
+        );
+
+        $this->add_control(
+            'inquiry_btn_text',
+            [
+                'label'   => __( 'Primary Button Text', 'zabun-connect' ),
+                'type'    => Controls_Manager::TEXT,
+                'default' => __( 'Request a viewing', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'inquiry_url',
+            [
+                'label'       => __( 'Primary Button URL / Action', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => 'mailto:agent@example.com or #inquiry-form',
+            ]
+        );
+
+        $this->add_control(
+            'show_brochure_btn',
+            [
+                'label'        => __( 'Show "Download brochure" Button', 'zabun-connect' ),
+                'type'         => Controls_Manager::SWITCHER,
+                'label_on'     => __( 'Yes', 'zabun-connect' ),
+                'label_off'    => __( 'No', 'zabun-connect' ),
+                'return_value' => 'yes',
+                'default'      => 'yes',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 1. Asymmetrical Photo Gallery
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_gallery',
+            [
+                'label' => __( 'Photo Gallery', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
 
-        $this->add_control(
-            'title_color',
+        $this->add_responsive_control(
+            'gallery_height',
             [
-                'label'     => __( 'Property Title Color', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .zabun-detail-title-block h1' => 'color: {{VALUE}};',
+                'label'      => __( 'Gallery Height', 'zabun-connect' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => [ 'px', 'vh' ],
+                'range'      => [
+                    'px' => [ 'min' => 280, 'max' => 750 ],
+                ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-detail-gallery' => 'height: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
 
         $this->add_group_control(
-            Group_Control_Typography::get_type(),
+            Group_Control_Border::get_type(),
             [
-                'name'     => 'title_typography',
-                'label'    => __( 'Title Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-detail-title-block h1',
+                'name'     => 'gallery_border',
+                'selector' => '{{WRAPPER}} .zabun-detail-gallery',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'gallery_radius',
+            [
+                'label'      => __( 'Border Radius', 'zabun-connect' ),
+                'type'       => Controls_Manager::DIMENSIONS,
+                'size_units' => [ 'px', '%' ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-detail-gallery' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
             ]
         );
 
         $this->add_control(
-            'location_color',
+            'badge_count_bg',
             [
-                'label'     => __( 'Location / Address Color', 'zabun-connect' ),
+                'label'     => __( 'Photo Counter Background', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'separator' => 'before',
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-detail-title-block .zabun-card-address' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-detail-gallery .photo-count-badge' => 'background-color: {{VALUE}};',
                 ],
             ]
         );
 
-        $this->add_group_control(
-            Group_Control_Typography::get_type(),
+        $this->add_control(
+            'badge_count_color',
             [
-                'name'     => 'location_typography',
-                'label'    => __( 'Location Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-detail-title-block .zabun-card-address',
+                'label'     => __( 'Photo Counter Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-gallery .photo-count-badge' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 2. Price, Title & Address
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_header',
+            [
+                'label' => __( 'Price, Title & Address', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
 
         $this->add_control(
             'price_color',
             [
-                'label'     => __( 'Price Highlight Color', 'zabun-connect' ),
+                'label'     => __( 'Price Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
-                'separator' => 'before',
                 'selectors' => [
                     '{{WRAPPER}} .zabun-detail-price' => 'color: {{VALUE}};',
                 ],
@@ -131,128 +298,55 @@ class PropertyDetail extends Widget_Base {
             ]
         );
 
-        $this->end_controls_section();
-
-        /* ==========================================================================
-           TAB STYLE: 2. Image Gallery
-           ========================================================================== */
-        $this->start_controls_section(
-            'section_style_gallery',
-            [
-                'label' => __( 'Photo Gallery', 'zabun-connect' ),
-                'tab'   => Controls_Manager::TAB_STYLE,
-            ]
-        );
-
-        $this->add_responsive_control(
-            'gallery_max_height',
-            [
-                'label'      => __( 'Main Image Max Height', 'zabun-connect' ),
-                'type'       => Controls_Manager::SLIDER,
-                'size_units' => [ 'px', 'vh' ],
-                'range'      => [
-                    'px' => [ 'min' => 250, 'max' => 800 ],
-                ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-gallery-main, {{WRAPPER}} .zabun-gallery-main img' => 'max-height: {{SIZE}}{{UNIT}};',
-                ],
-            ]
-        );
-
-        $this->add_responsive_control(
-            'gallery_radius',
-            [
-                'label'      => __( 'Main Image Border Radius', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', '%' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-gallery-main' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
-                ],
-            ]
-        );
-
-        $this->add_group_control(
-            Group_Control_Box_Shadow::get_type(),
-            [
-                'name'     => 'gallery_shadow',
-                'selector' => '{{WRAPPER}} .zabun-gallery-main',
-            ]
-        );
-
         $this->add_control(
-            'thumb_active_border',
+            'title_color',
             [
-                'label'     => __( 'Active Thumbnail Border Color', 'zabun-connect' ),
+                'label'     => __( 'Title Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'separator' => 'before',
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-thumb-item.active, {{WRAPPER}} .zabun-thumb-item:hover' => 'border-color: {{VALUE}}; opacity: 1;',
-                ],
-            ]
-        );
-
-        $this->end_controls_section();
-
-        /* ==========================================================================
-           TAB STYLE: 3. Overview & Facts Table
-           ========================================================================== */
-        $this->start_controls_section(
-            'section_style_facts_table',
-            [
-                'label' => __( 'Facts & Specifications Table', 'zabun-connect' ),
-                'tab'   => Controls_Manager::TAB_STYLE,
-            ]
-        );
-
-        $this->add_control(
-            'table_header_bg',
-            [
-                'label'     => __( 'Label Column Background', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .zabun-facts-table th' => 'background-color: {{VALUE}};',
-                ],
-            ]
-        );
-
-        $this->add_control(
-            'table_header_color',
-            [
-                'label'     => __( 'Label Column Text Color', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .zabun-facts-table th' => 'color: {{VALUE}};',
-                ],
-            ]
-        );
-
-        $this->add_control(
-            'table_val_color',
-            [
-                'label'     => __( 'Value Column Text Color', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .zabun-facts-table td' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-detail-title' => 'color: {{VALUE}};',
                 ],
             ]
         );
 
         $this->add_group_control(
-            Group_Control_Border::get_type(),
+            Group_Control_Typography::get_type(),
             [
-                'name'     => 'table_border',
-                'selector' => '{{WRAPPER}} .zabun-facts-table, {{WRAPPER}} .zabun-facts-table th, {{WRAPPER}} .zabun-facts-table td',
+                'name'     => 'title_typography',
+                'label'    => __( 'Title Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-detail-title',
             ]
         );
 
-        $this->add_responsive_control(
-            'table_cell_padding',
+        $this->add_control(
+            'address_color',
             [
-                'label'      => __( 'Cell Padding', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', 'em' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-facts-table th, {{WRAPPER}} .zabun-facts-table td' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                'label'     => __( 'Address Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-address, {{WRAPPER}} .zabun-detail-address span' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'address_typography',
+                'label'    => __( 'Address Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-detail-address',
+            ]
+        );
+
+        $this->add_control(
+            'address_icon_color',
+            [
+                'label'     => __( 'Address Pin Icon Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-address .zabun-icon-wrap, {{WRAPPER}} .zabun-detail-address .zabun-icon-wrap svg' => 'color: {{VALUE}}; fill: {{VALUE}}; stroke: {{VALUE}};',
                 ],
             ]
         );
@@ -260,12 +354,12 @@ class PropertyDetail extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 4. Sidebar Card
+           TAB STYLE: 3. Key Facts Strip
            ========================================================================== */
         $this->start_controls_section(
-            'section_style_sidebar',
+            'section_style_facts_strip',
             [
-                'label' => __( 'Inquiry Sidebar Card', 'zabun-connect' ),
+                'label' => __( 'Key Facts Strip', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
@@ -273,40 +367,282 @@ class PropertyDetail extends Widget_Base {
         $this->add_group_control(
             Group_Control_Background::get_type(),
             [
-                'name'     => 'sidebar_bg',
+                'name'     => 'facts_background',
                 'types'    => [ 'classic', 'gradient' ],
-                'selector' => '{{WRAPPER}} .zabun-sidebar-card',
+                'selector' => '{{WRAPPER}} .zabun-detail-facts-strip',
+            ]
+        );
+
+        $this->add_control(
+            'facts_border_color',
+            [
+                'label'     => __( 'Border & Divider Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-facts-strip' => 'border-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-detail-fact'       => 'border-left-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'facts_icon_color',
+            [
+                'label'     => __( 'Icons Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-fact .zabun-icon-wrap, {{WRAPPER}} .zabun-detail-fact .zabun-icon-wrap svg' => 'color: {{VALUE}}; fill: {{VALUE}}; stroke: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'facts_icon_size',
+            [
+                'label'      => __( 'Icons Size', 'zabun-connect' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => [ 'px' ],
+                'range'      => [ 'px' => [ 'min' => 12, 'max' => 48 ] ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-detail-fact .zabun-icon-wrap svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'facts_num_color',
+            [
+                'label'     => __( 'Numbers Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-fact .num' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'facts_num_typography',
+                'label'    => __( 'Numbers Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-detail-fact .num',
+            ]
+        );
+
+        $this->add_control(
+            'facts_label_color',
+            [
+                'label'     => __( 'Labels Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-fact .label' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'facts_label_typography',
+                'label'    => __( 'Labels Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-detail-fact .label',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 4. Section Headings & Description
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_sections',
+            [
+                'label' => __( 'Section Headings & Description', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'section_heading_color',
+            [
+                'label'     => __( 'Section Heading Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} h2.zabun-section-heading' => 'color: {{VALUE}}; border-bottom-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'section_heading_typography',
+                'label'    => __( 'Section Heading Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} h2.zabun-section-heading',
+            ]
+        );
+
+        $this->add_control(
+            'desc_text_color',
+            [
+                'label'     => __( 'Description Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-detail-description, {{WRAPPER}} .zabun-detail-description p' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'desc_typography',
+                'label'    => __( 'Description Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-detail-description',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 5. Key Details Specs Table
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_specs',
+            [
+                'label' => __( 'Key Details Specs Table', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'spec_label_color',
+            [
+                'label'     => __( 'Label Column Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-spec-table td:first-child' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'spec_val_color',
+            [
+                'label'     => __( 'Value Column Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-spec-table td:last-child' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'spec_typography',
+                'label'    => __( 'Table Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-spec-table',
+            ]
+        );
+
+        $this->add_control(
+            'spec_border_color',
+            [
+                'label'     => __( 'Row Border Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-spec-table tr' => 'border-bottom-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 6. Features List
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_features',
+            [
+                'label' => __( 'Features List', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'feature_icon_color',
+            [
+                'label'     => __( 'Checkmark Icon Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-features-list .feature-check-icon, {{WRAPPER}} .zabun-features-list .feature-check-icon svg' => 'color: {{VALUE}}; stroke: {{VALUE}}; fill: none;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'feature_text_color',
+            [
+                'label'     => __( 'Feature Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-features-list li, {{WRAPPER}} .zabun-features-list span' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'feature_typography',
+                'label'    => __( 'Feature Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-features-list',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 7. Sidebar & Agent Card
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_sidebar',
+            [
+                'label' => __( 'Sidebar & Agent Card', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Background::get_type(),
+            [
+                'name'     => 'agent_card_bg',
+                'types'    => [ 'classic', 'gradient' ],
+                'selector' => '{{WRAPPER}} .zabun-agent-card',
             ]
         );
 
         $this->add_group_control(
             Group_Control_Border::get_type(),
             [
-                'name'     => 'sidebar_border',
-                'selector' => '{{WRAPPER}} .zabun-sidebar-card',
+                'name'     => 'agent_card_border',
+                'selector' => '{{WRAPPER}} .zabun-agent-card',
             ]
         );
 
         $this->add_responsive_control(
-            'sidebar_radius',
+            'agent_card_radius',
             [
-                'label'      => __( 'Border Radius', 'zabun-connect' ),
+                'label'      => __( 'Card Border Radius', 'zabun-connect' ),
                 'type'       => Controls_Manager::DIMENSIONS,
                 'size_units' => [ 'px', '%' ],
                 'selectors'  => [
-                    '{{WRAPPER}} .zabun-sidebar-card' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
-                ],
-            ]
-        );
-
-        $this->add_responsive_control(
-            'sidebar_padding',
-            [
-                'label'      => __( 'Padding', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', 'em' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-sidebar-card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-agent-card' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
                 ],
             ]
         );
@@ -314,8 +650,42 @@ class PropertyDetail extends Widget_Base {
         $this->add_group_control(
             Group_Control_Box_Shadow::get_type(),
             [
-                'name'     => 'sidebar_shadow',
-                'selector' => '{{WRAPPER}} .zabun-sidebar-card',
+                'name'     => 'agent_card_shadow',
+                'selector' => '{{WRAPPER}} .zabun-agent-card',
+            ]
+        );
+
+        $this->add_control(
+            'agent_btn_primary_bg',
+            [
+                'label'     => __( 'Primary Button Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-btn-primary' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'agent_btn_primary_color',
+            [
+                'label'     => __( 'Primary Button Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-btn-primary' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'agent_btn_primary_hover_bg',
+            [
+                'label'     => __( 'Primary Button Hover Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-btn-primary:hover' => 'background-color: {{VALUE}};',
+                ],
             ]
         );
 
@@ -325,11 +695,52 @@ class PropertyDetail extends Widget_Base {
     protected function render(): void {
         $settings = $this->get_settings_for_display();
 
+        $custom_options = [
+            'agent_name'        => ! empty( $settings['agent_name'] ) ? $settings['agent_name'] : null,
+            'agent_role'        => ! empty( $settings['agent_role'] ) ? $settings['agent_role'] : null,
+            'agent_phone'       => ! empty( $settings['agent_phone'] ) ? $settings['agent_phone'] : null,
+            'agent_email'       => ! empty( $settings['agent_email'] ) ? $settings['agent_email'] : null,
+            'inquiry_btn_text'  => ! empty( $settings['inquiry_btn_text'] ) ? $settings['inquiry_btn_text'] : null,
+            'inquiry_url'       => ! empty( $settings['inquiry_url'] ) ? $settings['inquiry_url'] : null,
+            'show_brochure_btn' => ( $settings['show_brochure_btn'] ?? 'yes' ) === 'yes',
+        ];
+
+        // Custom SVGs / Icons rendering
+        if ( ! empty( $settings['custom_icon_pin']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_pin'], [ 'aria-hidden' => 'true' ] );
+            $custom_options['icon_pin'] = ob_get_clean();
+        }
+
+        if ( ! empty( $settings['custom_icon_beds']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_beds'], [ 'aria-hidden' => 'true' ] );
+            $custom_options['icon_beds'] = ob_get_clean();
+        }
+
+        if ( ! empty( $settings['custom_icon_baths']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_baths'], [ 'aria-hidden' => 'true' ] );
+            $custom_options['icon_baths'] = ob_get_clean();
+        }
+
+        if ( ! empty( $settings['custom_icon_area']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_area'], [ 'aria-hidden' => 'true' ] );
+            $custom_options['icon_area'] = ob_get_clean();
+        }
+
+        if ( ! empty( $settings['custom_icon_check']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_check'], [ 'aria-hidden' => 'true' ] );
+            $custom_options['icon_check'] = ob_get_clean();
+        }
+
         $atts = [
             'id'          => $settings['property_id'] ?? '',
             'external_id' => $settings['property_id'] ?? '',
         ];
 
-        echo ShortcodesHandler::instance()->render_detail_shortcode( $atts );
+        echo ShortcodesHandler::instance()->render_detail_shortcode( $atts, $custom_options );
     }
 }
