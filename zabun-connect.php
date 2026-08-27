@@ -24,29 +24,26 @@ define( 'ZABUN_CONNECT_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ZABUN_CONNECT_URL', plugin_dir_url( __FILE__ ) );
 
 /**
- * Autoloader implementation.
- * Attempts to load composer autoload if present, otherwise provides PSR-4 fallback.
+ * Native PSR-4 Autoloader.
+ * Automatically loads all classes in the ZabunConnect namespace from /src.
+ * Zero external dependencies or composer install required.
  */
-if ( file_exists( ZABUN_CONNECT_PATH . 'vendor/autoload.php' ) ) {
-    require_once ZABUN_CONNECT_PATH . 'vendor/autoload.php';
-} else {
-    spl_autoload_register( function ( $class ) {
-        $prefix   = 'ZabunConnect\\';
-        $base_dir = ZABUN_CONNECT_PATH . 'src/';
+spl_autoload_register( function ( $class ) {
+    $prefix   = 'ZabunConnect\\';
+    $base_dir = ZABUN_CONNECT_PATH . 'src/';
 
-        $len = strlen( $prefix );
-        if ( strncmp( $prefix, $class, $len ) !== 0 ) {
-            return;
-        }
+    $len = strlen( $prefix );
+    if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+        return;
+    }
 
-        $relative_class = substr( $class, $len );
-        $file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
+    $relative_class = substr( $class, $len );
+    $file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
 
-        if ( file_exists( $file ) ) {
-            require_once $file;
-        }
-    } );
-}
+    if ( file_exists( $file ) ) {
+        require_once $file;
+    }
+} );
 
 /**
  * Plugin activation hook.
