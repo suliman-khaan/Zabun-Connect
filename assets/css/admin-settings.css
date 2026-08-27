@@ -158,3 +158,54 @@
 @keyframes zabun-spin {
     to { transform: rotate(360deg); }
 }
+
+/* Shortcode Guide Styles */
+.zabun-guide-block {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.zabun-guide-block:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.zabun-guide-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    color: #1d2327;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zabun-guide-code {
+    display: block;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    color: #0c5460;
+    margin: 6px 0 8px;
+    user-select: all;
+}
+
+.zabun-param-list {
+    margin: 6px 0 0 16px;
+    font-size: 12px;
+    color: #646970;
+    line-height: 1.6;
+}
+
+.zabun-param-list code {
+    font-size: 11px;
+    background: #f0f0f1;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #1d2327;
+}

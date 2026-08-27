@@ -400,6 +400,74 @@ class SettingsPage {
                             ?>
                         </form>
                     </div>
+
+                    <!-- Shortcode & Integration Guide Card -->
+                    <div class="zabun-card">
+                        <h2 class="zabun-card-title"><?php esc_html_e( 'Shortcodes & Elementor Widgets Guide', 'zabun-connect' ); ?></h2>
+                        <p><?php esc_html_e( 'You can display property listings anywhere on your site using standard WordPress shortcodes or Elementor drag-and-drop widgets.', 'zabun-connect' ); ?></p>
+
+                        <!-- 1. Property Grid -->
+                        <div class="zabun-guide-block">
+                            <h3 class="zabun-guide-title">
+                                <span>1. <?php esc_html_e( 'Property Grid', 'zabun-connect' ); ?></span>
+                            </h3>
+                            <p><?php esc_html_e( 'Displays responsive property listing cards with pagination, status badges, and facts.', 'zabun-connect' ); ?></p>
+                            <code class="zabun-guide-code">[zabun_grid columns="3" limit="9" status="for_sale" pagination="yes"]</code>
+                            <ul class="zabun-param-list">
+                                <li><code>columns</code> : <code>1</code>, <code>2</code>, <code>3</code>, or <code>4</code> (Default: <code>3</code>)</li>
+                                <li><code>limit</code> : Number of listings per page (Default: <code>9</code>)</li>
+                                <li><code>status</code> : <code>for_sale</code>, <code>for_rent</code>, <code>sold</code>, or <code>rented</code> (Default: all)</li>
+                                <li><code>city</code> : Filter by specific city (e.g. <code>Brussels</code>, <code>Antwerp</code>)</li>
+                                <li><code>type</code> : Filter by property type (e.g. <code>Villa</code>, <code>Apartment</code>, <code>House</code>)</li>
+                                <li><code>orderby</code> : <code>date</code>, <code>price</code>, <code>title</code>, or <code>living_area</code></li>
+                                <li><code>order</code> : <code>DESC</code> (High to Low / Newest) or <code>ASC</code></li>
+                                <li><code>pagination</code> : <code>yes</code> or <code>no</code></li>
+                                <li><code>detail_url</code> : Custom single property page URL (optional)</li>
+                            </ul>
+                        </div>
+
+                        <!-- 2. Single Property Detail -->
+                        <div class="zabun-guide-block">
+                            <h3 class="zabun-guide-title">
+                                <span>2. <?php esc_html_e( 'Single Property Detail', 'zabun-connect' ); ?></span>
+                            </h3>
+                            <p><?php esc_html_e( 'Renders full luxury property details with photo gallery, specs table, features list, and agent contact sidebar.', 'zabun-connect' ); ?></p>
+                            <code class="zabun-guide-code">[zabun_detail]</code>
+                            <ul class="zabun-param-list">
+                                <li><code>[zabun_detail]</code> : Automatically pulls the property ID from the URL parameter (<code>?property_id=XYZ</code>).</li>
+                                <li><code>[zabun_detail id="ZB-1001"]</code> : Manually embed a specific property by its Zabun reference or ID.</li>
+                            </ul>
+                        </div>
+
+                        <!-- 3. Property Hero Search Bar -->
+                        <div class="zabun-guide-block">
+                            <h3 class="zabun-guide-title">
+                                <span>3. <?php esc_html_e( 'Property Search Bar', 'zabun-connect' ); ?></span>
+                            </h3>
+                            <p><?php esc_html_e( 'Displays the interactive Hero search bar with status tabs, city/type filters, and expandable drawer with price/bedroom ranges.', 'zabun-connect' ); ?></p>
+                            <code class="zabun-guide-code">[zabun_search action_url="/properties/"]</code>
+                            <ul class="zabun-param-list">
+                                <li><code>action_url</code> : Target page URL where search results should be submitted (Leave empty for current page).</li>
+                            </ul>
+                        </div>
+
+                        <!-- 4. Featured Listings -->
+                        <div class="zabun-guide-block">
+                            <h3 class="zabun-guide-title">
+                                <span>4. <?php esc_html_e( 'Featured Listings', 'zabun-connect' ); ?></span>
+                            </h3>
+                            <p><?php esc_html_e( 'Compact property highlights grid suitable for homepages and landing pages.', 'zabun-connect' ); ?></p>
+                            <code class="zabun-guide-code">[zabun_featured limit="3" columns="3" status="for_sale"]</code>
+                        </div>
+
+                        <!-- 5. Elementor Integration -->
+                        <div class="zabun-guide-block">
+                            <h3 class="zabun-guide-title">
+                                <span>5. <?php esc_html_e( 'Elementor Page Builder', 'zabun-connect' ); ?></span>
+                            </h3>
+                            <p><?php esc_html_e( 'If you use Elementor, simply search for "Zabun" in the Elementor widgets panel. You can visually configure custom SVG icons, colors, typographies, and badge styles directly in the editor!', 'zabun-connect' ); ?></p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="zabun-side-column">
