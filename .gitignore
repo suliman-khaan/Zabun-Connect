@@ -1,0 +1,22 @@
+# Composer
+/vendor/
+composer.lock
+
+# Development/Planning Files (Ignored for GitHub)
+plan-module-*.md
+review-module-*.md
+zabun-connect-implementation-plan.md
+zabun-elementor-plugin-plan.md
+/scratch/
+/tests/
+
+# OS/IDEs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# AI & IDE Agent Folders
+.gemini/
+.antigravity/
+.agents/

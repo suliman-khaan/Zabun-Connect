@@ -1,0 +1,20 @@
+{
+    "name": "zabun/zabun-connect",
+    "description": "Zabun CRM Integration for WordPress and Elementor",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Suliman Khan",
+            "homepage": "https://sulimankhan.pro"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "ZabunConnect\\": "src/"
+        }
+    }
+}
