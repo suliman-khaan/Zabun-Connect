@@ -8,6 +8,7 @@ use Elementor\Group_Control_Typography;
 use Elementor\Group_Control_Border;
 use Elementor\Group_Control_Box_Shadow;
 use Elementor\Group_Control_Background;
+use Elementor\Icons_Manager;
 use ZabunConnect\Shortcodes\ShortcodesHandler;
 use ZabunConnect\Cache\ListingsRepository;
 
@@ -174,7 +175,56 @@ class PropertyGrid extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 1. Card Container
+           TAB CONTENT: Custom Icons & SVGs
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_custom_icons',
+            [
+                'label' => __( 'Custom Icons / SVGs', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_pin',
+            [
+                'label'       => __( 'Location Pin Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to luxury pin.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_beds',
+            [
+                'label'       => __( 'Bedrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to bed icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_baths',
+            [
+                'label'       => __( 'Bathrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to bath icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_area',
+            [
+                'label'       => __( 'Surface / Area Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to m² icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 1. Property Card
            ========================================================================== */
         $this->start_controls_section(
             'section_style_card',
@@ -201,6 +251,7 @@ class PropertyGrid extends Widget_Base {
                 'size_units' => [ 'px', 'em', '%' ],
                 'selectors'  => [
                     '{{WRAPPER}} .zabun-card-body' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-card-facts' => 'margin-left: -{{LEFT}}{{UNIT}}; margin-right: -{{RIGHT}}{{UNIT}};',
                 ],
             ]
         );
@@ -236,7 +287,7 @@ class PropertyGrid extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 2. Image / Media
+           TAB STYLE: 2. Image & Media
            ========================================================================== */
         $this->start_controls_section(
             'section_style_media',
@@ -253,7 +304,7 @@ class PropertyGrid extends Widget_Base {
                 'type'       => Controls_Manager::SLIDER,
                 'size_units' => [ 'px', 'vh' ],
                 'range'      => [
-                    'px' => [ 'min' => 120, 'max' => 500 ],
+                    'px' => [ 'min' => 120, 'max' => 600 ],
                 ],
                 'selectors'  => [
                     '{{WRAPPER}} .zabun-card-media' => 'height: {{SIZE}}{{UNIT}}; aspect-ratio: unset;',
@@ -276,35 +327,150 @@ class PropertyGrid extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 3. Status Badge
+           TAB STYLE: 3. Status Badges (Separate Color Per Status)
            ========================================================================== */
         $this->start_controls_section(
-            'section_style_badge',
+            'section_style_badges',
             [
-                'label' => __( 'Status Badge', 'zabun-connect' ),
+                'label' => __( 'Status Badges', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
 
+        // For Sale Badge
         $this->add_control(
-            'badge_bg_color',
+            'heading_badge_sale',
             [
-                'label'     => __( 'Badge Background Color', 'zabun-connect' ),
+                'label'     => __( '"For Sale" Badge', 'zabun-connect' ),
+                'type'      => Controls_Manager::HEADING,
+            ]
+        );
+
+        $this->add_control(
+            'badge_sale_bg',
+            [
+                'label'     => __( 'Background Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-card-badge' => 'background-color: {{VALUE}} !important;',
+                    '{{WRAPPER}} .zabun-card-tag.status-for_sale, {{WRAPPER}} .zabun-card-tag.status-sale' => 'background-color: {{VALUE}} !important;',
                 ],
             ]
         );
 
         $this->add_control(
-            'badge_text_color',
+            'badge_sale_color',
             [
-                'label'     => __( 'Badge Text Color', 'zabun-connect' ),
+                'label'     => __( 'Text Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-card-badge' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-tag.status-for_sale, {{WRAPPER}} .zabun-card-tag.status-sale' => 'color: {{VALUE}} !important;',
                 ],
+            ]
+        );
+
+        // For Rent Badge
+        $this->add_control(
+            'heading_badge_rent',
+            [
+                'label'     => __( '"For Rent" Badge', 'zabun-connect' ),
+                'type'      => Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'badge_rent_bg',
+            [
+                'label'     => __( 'Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_rent, {{WRAPPER}} .zabun-card-tag.status-rent' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_rent_color',
+            [
+                'label'     => __( 'Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_rent, {{WRAPPER}} .zabun-card-tag.status-rent' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        // Price Reduced Badge
+        $this->add_control(
+            'heading_badge_reduced',
+            [
+                'label'     => __( '"Price Reduced" Badge', 'zabun-connect' ),
+                'type'      => Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'badge_reduced_bg',
+            [
+                'label'     => __( 'Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-reduced, {{WRAPPER}} .zabun-card-tag.status-price_reduced' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_reduced_color',
+            [
+                'label'     => __( 'Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-reduced, {{WRAPPER}} .zabun-card-tag.status-price_reduced' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        // Sold / Rented Badge
+        $this->add_control(
+            'heading_badge_sold',
+            [
+                'label'     => __( '"Sold / Rented" Badge', 'zabun-connect' ),
+                'type'      => Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'badge_sold_bg',
+            [
+                'label'     => __( 'Background Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-sold, {{WRAPPER}} .zabun-card-tag.status-rented' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_sold_color',
+            [
+                'label'     => __( 'Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-sold, {{WRAPPER}} .zabun-card-tag.status-rented' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        // Badge Typography & Style
+        $this->add_control(
+            'heading_badge_general',
+            [
+                'label'     => __( 'Badge Typography & Sizing', 'zabun-connect' ),
+                'type'      => Controls_Manager::HEADING,
+                'separator' => 'before',
             ]
         );
 
@@ -312,31 +478,19 @@ class PropertyGrid extends Widget_Base {
             Group_Control_Typography::get_type(),
             [
                 'name'     => 'badge_typography',
-                'label'    => __( 'Badge Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-card-badge',
-            ]
-        );
-
-        $this->add_responsive_control(
-            'badge_radius',
-            [
-                'label'      => __( 'Badge Border Radius', 'zabun-connect' ),
-                'type'       => Controls_Manager::DIMENSIONS,
-                'size_units' => [ 'px', '%' ],
-                'selectors'  => [
-                    '{{WRAPPER}} .zabun-card-badge' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
-                ],
+                'label'    => __( 'Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-card-tag',
             ]
         );
 
         $this->add_responsive_control(
             'badge_padding',
             [
-                'label'      => __( 'Badge Padding', 'zabun-connect' ),
+                'label'      => __( 'Padding', 'zabun-connect' ),
                 'type'       => Controls_Manager::DIMENSIONS,
                 'size_units' => [ 'px', 'em' ],
                 'selectors'  => [
-                    '{{WRAPPER}} .zabun-card-badge' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-card-tag' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
                 ],
             ]
         );
@@ -449,7 +603,7 @@ class PropertyGrid extends Widget_Base {
                 'type'      => Controls_Manager::COLOR,
                 'separator' => 'before',
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-card-address' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-address, {{WRAPPER}} .zabun-card-address span' => 'color: {{VALUE}};',
                 ],
             ]
         );
@@ -463,15 +617,40 @@ class PropertyGrid extends Widget_Base {
             ]
         );
 
+        $this->add_control(
+            'address_icon_color',
+            [
+                'label'     => __( 'Address Pin Icon Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-address .zabun-icon-wrap, {{WRAPPER}} .zabun-card-address .zabun-icon-wrap svg, {{WRAPPER}} .zabun-card-address .zabun-icon-wrap i' => 'color: {{VALUE}}; fill: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'address_icon_size',
+            [
+                'label'      => __( 'Address Pin Icon Size', 'zabun-connect' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => [ 'px' ],
+                'range'      => [ 'px' => [ 'min' => 8, 'max' => 32 ] ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-card-address .zabun-icon-wrap svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-card-address .zabun-icon-wrap i'   => 'font-size: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 6. Features / Facts (Beds, Baths, Area)
+           TAB STYLE: 6. Key Facts & Icons (Beds/Baths/Area)
            ========================================================================== */
         $this->start_controls_section(
             'section_style_facts',
             [
-                'label' => __( 'Key Facts & Specs (Beds/Baths)', 'zabun-connect' ),
+                'label' => __( 'Key Facts & Icons', 'zabun-connect' ),
                 'tab'   => Controls_Manager::TAB_STYLE,
             ]
         );
@@ -479,32 +658,48 @@ class PropertyGrid extends Widget_Base {
         $this->add_control(
             'facts_border_color',
             [
-                'label'     => __( 'Separator Border Color', 'zabun-connect' ),
+                'label'     => __( 'Divider & Top Border Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
                     '{{WRAPPER}} .zabun-card-facts' => 'border-top-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-fact-item' => 'border-left-color: {{VALUE}};',
                 ],
             ]
         );
 
         $this->add_control(
-            'facts_text_color',
+            'facts_icon_color',
             [
-                'label'     => __( 'Text Color', 'zabun-connect' ),
+                'label'     => __( 'Facts Icon Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-card-facts, {{WRAPPER}} .zabun-fact-item' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap, {{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap svg, {{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap i' => 'color: {{VALUE}}; fill: {{VALUE}}; stroke: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'facts_icon_size',
+            [
+                'label'      => __( 'Facts Icon Size', 'zabun-connect' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => [ 'px' ],
+                'range'      => [ 'px' => [ 'min' => 10, 'max' => 48 ] ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap i'   => 'font-size: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
 
         $this->add_control(
-            'facts_strong_color',
+            'facts_num_color',
             [
-                'label'     => __( 'Numbers Highlight Color', 'zabun-connect' ),
+                'label'     => __( 'Numbers Color', 'zabun-connect' ),
                 'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-fact-item strong' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-fact-item .num' => 'color: {{VALUE}};',
                 ],
             ]
         );
@@ -512,9 +707,42 @@ class PropertyGrid extends Widget_Base {
         $this->add_group_control(
             Group_Control_Typography::get_type(),
             [
-                'name'     => 'facts_typography',
-                'label'    => __( 'Facts Typography', 'zabun-connect' ),
-                'selector' => '{{WRAPPER}} .zabun-card-facts',
+                'name'     => 'facts_num_typography',
+                'label'    => __( 'Numbers Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-card-fact-item .num',
+            ]
+        );
+
+        $this->add_control(
+            'facts_label_color',
+            [
+                'label'     => __( 'Labels Color (e.g. BEDS, BATHS)', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-fact-item .label' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'facts_label_typography',
+                'label'    => __( 'Labels Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-card-fact-item .label',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'facts_cell_padding',
+            [
+                'label'      => __( 'Cell Padding', 'zabun-connect' ),
+                'type'       => Controls_Manager::DIMENSIONS,
+                'size_units' => [ 'px', 'em' ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-card-fact-item' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
             ]
         );
 
@@ -582,18 +810,96 @@ class PropertyGrid extends Widget_Base {
     protected function render(): void {
         $settings = $this->get_settings_for_display();
 
-        $atts = [
-            'columns'    => $settings['columns'] ?? 3,
-            'limit'      => $settings['limit'] ?? 9,
-            'status'     => $settings['status'] ?? '',
-            'city'       => $settings['city'] ?? '',
-            'type'       => $settings['type'] ?? '',
-            'orderby'    => $settings['orderby'] ?? 'date',
-            'order'      => $settings['order'] ?? 'DESC',
-            'pagination' => $settings['pagination'] ?? 'yes',
-            'detail_url' => $settings['detail_url'] ?? '',
+        $custom_icons = [];
+
+        // Render Pin Icon if set
+        if ( ! empty( $settings['custom_icon_pin']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_pin'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['pin'] = ob_get_clean();
+        }
+
+        // Render Beds Icon if set
+        if ( ! empty( $settings['custom_icon_beds']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_beds'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['beds'] = ob_get_clean();
+        }
+
+        // Render Baths Icon if set
+        if ( ! empty( $settings['custom_icon_baths']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_baths'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['baths'] = ob_get_clean();
+        }
+
+        // Render Area Icon if set
+        if ( ! empty( $settings['custom_icon_area']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_area'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['area'] = ob_get_clean();
+        }
+
+        $repo = ListingsRepository::instance();
+
+        $current_page = max( 1, (int) ( $_GET['zabun_page'] ?? ( get_query_var( 'paged' ) ? get_query_var( 'paged' ) : 1 ) ) );
+        $status_filter = ! empty( $_GET['zabun_status'] ) ? sanitize_text_field( $_GET['zabun_status'] ) : ( $settings['status'] ?? '' );
+        $city_filter   = ! empty( $_GET['zabun_city'] ) ? sanitize_text_field( $_GET['zabun_city'] ) : ( $settings['city'] ?? '' );
+        $type_filter   = ! empty( $_GET['zabun_type'] ) ? sanitize_text_field( $_GET['zabun_type'] ) : ( $settings['type'] ?? '' );
+        $min_price     = ! empty( $_GET['zabun_min_price'] ) ? (float) $_GET['zabun_min_price'] : null;
+        $max_price     = ! empty( $_GET['zabun_max_price'] ) ? (float) $_GET['zabun_max_price'] : null;
+        $bedrooms      = ! empty( $_GET['zabun_bedrooms'] ) ? (int) $_GET['zabun_bedrooms'] : null;
+        $search        = ! empty( $_GET['zabun_search'] ) ? sanitize_text_field( $_GET['zabun_search'] ) : '';
+
+        $limit = max( 1, (int) ( $settings['limit'] ?? 9 ) );
+
+        $query_args = [
+            'limit'         => $limit,
+            'page'          => $current_page,
+            'status'        => $status_filter,
+            'city'          => $city_filter,
+            'property_type' => $type_filter,
+            'min_price'     => $min_price,
+            'max_price'     => $max_price,
+            'bedrooms'      => $bedrooms,
+            'search'        => $search,
+            'orderby'       => sanitize_text_field( $settings['orderby'] ?? 'date' ),
+            'order'         => sanitize_text_field( $settings['order'] ?? 'DESC' ),
         ];
 
-        echo ShortcodesHandler::instance()->render_grid_shortcode( $atts );
+        $listings     = $repo->get_listings( $query_args );
+        $total_items  = $repo->count_listings( $query_args );
+        $total_pages  = ceil( $total_items / $limit );
+        $columns_cls  = 'zabun-grid-' . min( 4, max( 1, (int) ( $settings['columns'] ?? 3 ) ) );
+        $detail_url   = $settings['detail_url'] ?? '';
+
+        ShortcodesHandler::instance()->enqueue_assets();
+        ?>
+        <div class="zabun-grid-container">
+            <?php if ( empty( $listings ) ) : ?>
+                <div class="zabun-empty-state">
+                    <p><?php esc_html_e( 'No property listings found matching your criteria.', 'zabun-connect' ); ?></p>
+                </div>
+            <?php else : ?>
+                <div class="zabun-grid <?php echo esc_attr( $columns_cls ); ?>">
+                    <?php foreach ( $listings as $item ) : ?>
+                        <?php echo ShortcodesHandler::instance()->render_card_html( $item, $detail_url, $custom_icons ); ?>
+                    <?php endforeach; ?>
+                </div>
+
+                <?php if ( ( $settings['pagination'] ?? 'yes' ) === 'yes' && $total_pages > 1 ) : ?>
+                    <div class="zabun-pagination">
+                        <?php for ( $i = 1; $i <= $total_pages; $i++ ) : ?>
+                            <?php if ( $i === $current_page ) : ?>
+                                <span class="current"><?php echo esc_html( $i ); ?></span>
+                            <?php else : ?>
+                                <a href="<?php echo esc_url( add_query_arg( 'zabun_page', $i ) ); ?>"><?php echo esc_html( $i ); ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 }

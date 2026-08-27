@@ -8,6 +8,7 @@ use Elementor\Group_Control_Typography;
 use Elementor\Group_Control_Border;
 use Elementor\Group_Control_Box_Shadow;
 use Elementor\Group_Control_Background;
+use Elementor\Icons_Manager;
 use ZabunConnect\Shortcodes\ShortcodesHandler;
 use ZabunConnect\Cache\ListingsRepository;
 
@@ -36,8 +37,6 @@ class FeaturedListings extends Widget_Base {
     }
 
     protected function register_controls(): void {
-        $repo = ListingsRepository::instance();
-
         /* ==========================================================================
            TAB CONTENT
            ========================================================================== */
@@ -101,7 +100,56 @@ class FeaturedListings extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 1. Card Container
+           TAB CONTENT: Custom Icons & SVGs
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_custom_icons',
+            [
+                'label' => __( 'Custom Icons / SVGs', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_pin',
+            [
+                'label'       => __( 'Location Pin Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to luxury pin.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_beds',
+            [
+                'label'       => __( 'Bedrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to bed icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_baths',
+            [
+                'label'       => __( 'Bathrooms Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to bath icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->add_control(
+            'custom_icon_area',
+            [
+                'label'       => __( 'Surface / Area Icon', 'zabun-connect' ),
+                'type'        => Controls_Manager::ICONS,
+                'description' => __( 'Upload your own SVG or choose from library. Defaults to m² icon.', 'zabun-connect' ),
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 1. Property Card
            ========================================================================== */
         $this->start_controls_section(
             'section_style_card',
@@ -151,7 +199,97 @@ class FeaturedListings extends Widget_Base {
         $this->end_controls_section();
 
         /* ==========================================================================
-           TAB STYLE: 2. Price & Typography
+           TAB STYLE: 2. Status Badges (Separate Color Per Status)
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_badges',
+            [
+                'label' => __( 'Status Badges', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'badge_sale_bg',
+            [
+                'label'     => __( '"For Sale" Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_sale, {{WRAPPER}} .zabun-card-tag.status-sale' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_sale_color',
+            [
+                'label'     => __( '"For Sale" Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_sale, {{WRAPPER}} .zabun-card-tag.status-sale' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_rent_bg',
+            [
+                'label'     => __( '"For Rent" Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_rent, {{WRAPPER}} .zabun-card-tag.status-rent' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_rent_color',
+            [
+                'label'     => __( '"For Rent" Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-for_rent, {{WRAPPER}} .zabun-card-tag.status-rent' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_reduced_bg',
+            [
+                'label'     => __( '"Price Reduced" Background', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'separator' => 'before',
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-reduced, {{WRAPPER}} .zabun-card-tag.status-price_reduced' => 'background-color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'badge_reduced_color',
+            [
+                'label'     => __( '"Price Reduced" Text Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-tag.status-reduced, {{WRAPPER}} .zabun-card-tag.status-price_reduced' => 'color: {{VALUE}} !important;',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name'     => 'badge_typography',
+                'label'    => __( 'Badge Typography', 'zabun-connect' ),
+                'selector' => '{{WRAPPER}} .zabun-card-tag',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 3. Price & Typography
            ========================================================================== */
         $this->start_controls_section(
             'section_style_typography',
@@ -203,19 +341,121 @@ class FeaturedListings extends Widget_Base {
         );
 
         $this->end_controls_section();
+
+        /* ==========================================================================
+           TAB STYLE: 4. Facts & Icons
+           ========================================================================== */
+        $this->start_controls_section(
+            'section_style_facts',
+            [
+                'label' => __( 'Key Facts & Icons', 'zabun-connect' ),
+                'tab'   => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'facts_icon_color',
+            [
+                'label'     => __( 'Icon Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap, {{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap svg, {{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap i' => 'color: {{VALUE}}; fill: {{VALUE}}; stroke: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'facts_icon_size',
+            [
+                'label'      => __( 'Icon Size', 'zabun-connect' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => [ 'px' ],
+                'range'      => [ 'px' => [ 'min' => 10, 'max' => 48 ] ],
+                'selectors'  => [
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .zabun-card-fact-item .zabun-icon-wrap i'   => 'font-size: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'facts_border_color',
+            [
+                'label'     => __( 'Border Color', 'zabun-connect' ),
+                'type'      => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .zabun-card-facts' => 'border-top-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-card-fact-item' => 'border-left-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
     }
 
     protected function render(): void {
         $settings = $this->get_settings_for_display();
 
-        $atts = [
-            'columns'    => $settings['columns'] ?? 3,
-            'limit'      => $settings['limit'] ?? 3,
-            'status'     => $settings['status'] ?? '',
-            'detail_url' => $settings['detail_url'] ?? '',
-            'pagination' => 'no',
+        $custom_icons = [];
+
+        // Render Pin Icon if set
+        if ( ! empty( $settings['custom_icon_pin']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_pin'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['pin'] = ob_get_clean();
+        }
+
+        // Render Beds Icon if set
+        if ( ! empty( $settings['custom_icon_beds']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_beds'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['beds'] = ob_get_clean();
+        }
+
+        // Render Baths Icon if set
+        if ( ! empty( $settings['custom_icon_baths']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_baths'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['baths'] = ob_get_clean();
+        }
+
+        // Render Area Icon if set
+        if ( ! empty( $settings['custom_icon_area']['value'] ) ) {
+            ob_start();
+            Icons_Manager::render_icon( $settings['custom_icon_area'], [ 'aria-hidden' => 'true' ] );
+            $custom_icons['area'] = ob_get_clean();
+        }
+
+        $repo = ListingsRepository::instance();
+
+        $limit = max( 1, (int) ( $settings['limit'] ?? 3 ) );
+
+        $query_args = [
+            'limit'   => $limit,
+            'status'  => $settings['status'] ?? '',
+            'orderby' => 'date',
+            'order'   => 'DESC',
         ];
 
-        echo ShortcodesHandler::instance()->render_featured_shortcode( $atts );
+        $listings   = $repo->get_listings( $query_args );
+        $columns_cls = 'zabun-grid-' . min( 4, max( 1, (int) ( $settings['columns'] ?? 3 ) ) );
+        $detail_url  = $settings['detail_url'] ?? '';
+
+        ShortcodesHandler::instance()->enqueue_assets();
+        ?>
+        <div class="zabun-grid-container">
+            <?php if ( empty( $listings ) ) : ?>
+                <div class="zabun-empty-state">
+                    <p><?php esc_html_e( 'No featured listings found.', 'zabun-connect' ); ?></p>
+                </div>
+            <?php else : ?>
+                <div class="zabun-grid <?php echo esc_attr( $columns_cls ); ?>">
+                    <?php foreach ( $listings as $item ) : ?>
+                        <?php echo ShortcodesHandler::instance()->render_card_html( $item, $detail_url, $custom_icons ); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 }

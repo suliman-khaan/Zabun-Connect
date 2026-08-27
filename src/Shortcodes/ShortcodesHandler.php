@@ -163,13 +163,14 @@ class ShortcodesHandler {
      * @param string $detail_url_base
      * @return string
      */
-    public function render_card_html( array $item, string $detail_url_base = '' ): string {
+    public function render_card_html( array $item, string $detail_url_base = '', array $custom_icons = [] ): string {
         $detail_link = ! empty( $detail_url_base ) 
             ? add_query_arg( 'property_id', $item['external_id'], $detail_url_base ) 
             : add_query_arg( 'property_id', $item['external_id'] );
 
-        $status_label = ucwords( str_replace( '_', ' ', $item['status'] ?? 'for sale' ) );
-        $status_class = 'status-' . sanitize_html_class( $item['status'] ?? 'for_sale' );
+        $raw_status = strtolower( trim( $item['status'] ?? 'for_sale' ) );
+        $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
+        $status_class = 'status-' . sanitize_html_class( $raw_status );
         
         $price_formatted = ! empty( $item['price'] ) 
             ? '€ ' . number_format( (float) $item['price'], 0, ',', '.' ) 
@@ -177,11 +178,19 @@ class ShortcodesHandler {
 
         $freq = ! empty( $item['price_frequency'] ) ? ' / ' . esc_html( $item['price_frequency'] ) : '';
 
+        // Default SVG Icons
+        $icon_pin   = $custom_icons['pin'] ?? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s7-7.58 7-13a7 7 0 0 0-14 0c0 5.42 7 13 7 13Z"/><circle cx="12" cy="9" r="2.4"/></svg>';
+        $icon_beds  = $custom_icons['beds'] ?? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18v2M21 18v2"/><path d="M7 10V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/><path d="M3 14h18"/></svg>';
+        $icon_baths = $custom_icons['baths'] ?? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3Z"/><path d="M6 12V6a2 2 0 0 1 3.2-1.6"/><path d="M4 19v1M18 19v1"/></svg>';
+        $icon_area  = $custom_icons['area'] ?? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg>';
+
+        $address_str = trim( ( $item['address'] ? $item['address'] . ', ' : '' ) . $item['city'] );
+
         ob_start();
         ?>
         <article class="zabun-card">
             <div class="zabun-card-media">
-                <span class="zabun-card-badge <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
+                <span class="zabun-card-tag <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
                 <?php if ( ! empty( $item['featured_image'] ) ) : ?>
                     <a href="<?php echo esc_url( $detail_link ); ?>">
                         <img class="zabun-card-img" src="<?php echo esc_url( $item['featured_image'] ); ?>" alt="<?php echo esc_attr( $item['title'] ); ?>" loading="lazy" />
@@ -194,34 +203,35 @@ class ShortcodesHandler {
             </div>
 
             <div class="zabun-card-body">
-                <div class="zabun-card-price">
-                    <?php echo esc_html( $price_formatted ); ?><span class="zabun-card-price-freq"><?php echo esc_html( $freq ); ?></span>
-                </div>
+                <p class="zabun-card-price">
+                    <?php echo esc_html( $price_formatted ); ?><?php if ( $freq ) : ?><span class="zabun-card-price-freq"><?php echo esc_html( $freq ); ?></span><?php endif; ?>
+                </p>
                 <h3 class="zabun-card-title">
                     <a href="<?php echo esc_url( $detail_link ); ?>"><?php echo esc_html( $item['title'] ); ?></a>
                 </h3>
-                <?php if ( ! empty( $item['address'] ) || ! empty( $item['city'] ) ) : ?>
-                    <div class="zabun-card-address">
-                        <span>📍 <?php echo esc_html( trim( ( $item['address'] ? $item['address'] . ', ' : '' ) . $item['city'] ) ); ?></span>
-                    </div>
+                <?php if ( ! empty( $address_str ) ) : ?>
+                    <p class="zabun-card-address">
+                        <span class="zabun-icon-wrap"><?php echo $icon_pin; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+                        <span><?php echo esc_html( $address_str ); ?></span>
+                    </p>
                 <?php endif; ?>
 
                 <div class="zabun-card-facts">
-                    <?php if ( ! empty( $item['bedrooms'] ) ) : ?>
-                        <div class="zabun-fact-item">
-                            <span>🛏️</span> <strong><?php echo esc_html( $item['bedrooms'] ); ?></strong> <?php esc_html_e( 'Beds', 'zabun-connect' ); ?>
-                        </div>
-                    <?php endif; ?>
-                    <?php if ( ! empty( $item['bathrooms'] ) ) : ?>
-                        <div class="zabun-fact-item">
-                            <span>🚿</span> <strong><?php echo esc_html( $item['bathrooms'] ); ?></strong> <?php esc_html_e( 'Baths', 'zabun-connect' ); ?>
-                        </div>
-                    <?php endif; ?>
-                    <?php if ( ! empty( $item['living_area'] ) ) : ?>
-                        <div class="zabun-fact-item">
-                            <span>📐</span> <strong><?php echo esc_html( $item['living_area'] ); ?></strong> m²
-                        </div>
-                    <?php endif; ?>
+                    <div class="zabun-card-fact-item">
+                        <span class="zabun-icon-wrap"><?php echo $icon_beds; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+                        <span class="num"><?php echo esc_html( $item['bedrooms'] ?: 0 ); ?></span>
+                        <span class="label"><?php esc_html_e( 'Beds', 'zabun-connect' ); ?></span>
+                    </div>
+                    <div class="zabun-card-fact-item">
+                        <span class="zabun-icon-wrap"><?php echo $icon_baths; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+                        <span class="num"><?php echo esc_html( $item['bathrooms'] ?: 0 ); ?></span>
+                        <span class="label"><?php esc_html_e( 'Baths', 'zabun-connect' ); ?></span>
+                    </div>
+                    <div class="zabun-card-fact-item">
+                        <span class="zabun-icon-wrap"><?php echo $icon_area; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+                        <span class="num"><?php echo esc_html( $item['living_area'] ? round( (float) $item['living_area'], 1 ) : '-' ); ?></span>
+                        <span class="label"><?php esc_html_e( 'm²', 'zabun-connect' ); ?></span>
+                    </div>
                 </div>
             </div>
         </article>

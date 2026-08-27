@@ -1,18 +1,24 @@
 /**
- * Zabun Connect - Frontend Stylesheet
+ * Zabun Connect - Luxury Property Card & Frontend Stylesheet
  */
 
 :root {
-    --zabun-primary: #1a56db;
-    --zabun-primary-hover: #1e429f;
-    --zabun-text: #1f2937;
-    --zabun-text-muted: #6b7280;
-    --zabun-bg: #ffffff;
-    --zabun-card-bg: #ffffff;
-    --zabun-border: #e5e7eb;
-    --zabun-radius: 10px;
-    --zabun-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --zabun-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --zabun-ink:        #1C231F;
+    --zabun-ink-soft:   #4B5449;
+    --zabun-paper:      #F6F4EC;
+    --zabun-paper-card: #FBFAF5;
+    --zabun-brass:      #8A6D3B;
+    --zabun-brass-deep: #6E551F;
+    --zabun-rust:       #7A2E1F;
+    --zabun-stone:      #D8D2C1;
+    --zabun-mist:       #EFEBDF;
+
+    /* Theme / Elementor Fallbacks */
+    --zabun-primary:    var(--e-global-color-primary, var(--zabun-brass-deep));
+    --zabun-secondary:  var(--e-global-color-secondary, var(--zabun-brass));
+    --zabun-text:       var(--e-global-color-text, var(--zabun-ink));
+    --zabun-text-soft:  var(--zabun-ink-soft);
+    --zabun-border:     var(--zabun-stone);
 }
 
 /* ==========================================================================
@@ -25,7 +31,7 @@
 
 .zabun-grid {
     display: grid;
-    gap: 24px;
+    gap: 32px;
 }
 
 .zabun-grid-1 { grid-template-columns: 1fr; }
@@ -46,142 +52,209 @@
 }
 
 /* ==========================================================================
-   Property Card
+   Luxury Property Card
    ========================================================================== */
 .zabun-card {
-    background: var(--zabun-card-bg);
+    background: var(--zabun-paper-card);
     border: 1px solid var(--zabun-border);
-    border-radius: var(--zabun-radius);
+    border-radius: 2px;
     overflow: hidden;
-    box-shadow: var(--zabun-shadow);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     flex-direction: column;
     position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .zabun-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--zabun-shadow-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -6px rgba(28, 35, 31, 0.08);
 }
 
+/* Media / Image */
 .zabun-card-media {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
-    background-color: #f3f4f6;
+    background: var(--zabun-mist);
 }
 
 .zabun-card-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
     transition: transform 0.4s ease;
 }
 
 .zabun-card:hover .zabun-card-img {
-    transform: scale(1.05);
+    transform: scale(1.04);
 }
 
 .zabun-placeholder-img {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f3f4f6;
-    color: #9ca3af;
-    font-size: 14px;
+    background: var(--zabun-mist);
+    color: var(--zabun-ink-soft);
+    font-size: 13px;
     height: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.zabun-card-badge {
+/* Status Badge with Ribbon Cut */
+.zabun-card-tag {
     position: absolute;
-    top: 12px;
-    left: 12px;
-    background: var(--zabun-primary);
-    color: #ffffff;
-    font-size: 12px;
+    top: 16px;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px 6px 12px;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    color: var(--zabun-paper-card);
+    background: var(--zabun-brass-deep);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
     z-index: 2;
 }
 
-.zabun-card-badge.status-for_rent {
-    background: #059669;
+.zabun-card-tag.status-for_sale, .zabun-card-tag.status-sale {
+    background: var(--zabun-brass-deep);
 }
 
-.zabun-card-badge.status-sold, .zabun-card-badge.status-rented {
-    background: #dc2626;
+.zabun-card-tag.status-for_rent, .zabun-card-tag.status-rent {
+    background: #2E5A44;
 }
 
+.zabun-card-tag.status-reduced, .zabun-card-tag.status-price_reduced {
+    background: var(--zabun-rust);
+}
+
+.zabun-card-tag.status-sold, .zabun-card-tag.status-rented {
+    background: #5A2A2A;
+}
+
+/* Card Body */
 .zabun-card-body {
-    padding: 18px 20px;
+    padding: 20px 22px 0;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
 }
 
+/* Price */
 .zabun-card-price {
-    font-size: 22px;
-    font-weight: 700;
+    font-family: 'Fraunces', Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.01em;
     color: var(--zabun-text);
-    margin-bottom: 8px;
+    margin: 0 0 6px;
+    line-height: 1.15;
 }
 
 .zabun-card-price-freq {
     font-size: 14px;
     font-weight: 400;
-    color: var(--zabun-text-muted);
+    color: var(--zabun-text-soft);
+    margin-left: 4px;
 }
 
+/* Title */
 .zabun-card-title {
-    font-size: 17px;
-    font-weight: 600;
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--zabun-text);
-    margin: 0 0 8px 0;
-    line-height: 1.35;
+    line-height: 1.4;
 }
 
 .zabun-card-title a {
     color: inherit;
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .zabun-card-title a:hover {
     color: var(--zabun-primary);
 }
 
+/* Address */
 .zabun-card-address {
-    font-size: 13px;
-    color: var(--zabun-text-muted);
-    margin-bottom: 14px;
     display: flex;
-    align-items: center;
-    gap: 4px;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: var(--zabun-text-soft);
+    line-height: 1.5;
 }
 
+.zabun-card-address .zabun-icon-wrap {
+    flex: none;
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--zabun-text-soft);
+}
+
+.zabun-card-address svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* Key Facts 3-Column Grid */
 .zabun-card-facts {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding-top: 12px;
-    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     border-top: 1px solid var(--zabun-border);
-    font-size: 13px;
-    color: var(--zabun-text-muted);
+    margin: auto -22px 0 -22px;
 }
 
-.zabun-fact-item {
-    display: flex;
+.zabun-card-fact-item {
+    padding: 14px 8px 16px;
+    text-align: center;
+    border-left: 1px solid var(--zabun-border);
+}
+
+.zabun-card-fact-item:first-child {
+    border-left: none;
+}
+
+.zabun-card-fact-item .zabun-icon-wrap {
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
+    color: var(--zabun-secondary);
+    margin-bottom: 6px;
 }
 
-.zabun-fact-item strong {
+.zabun-card-fact-item svg {
+    width: 18px;
+    height: 18px;
+}
+
+.zabun-card-fact-item .num {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--zabun-text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.zabun-card-fact-item .label {
+    display: block;
+    margin-top: 2px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--zabun-text-soft);
 }
 
 /* ==========================================================================
@@ -191,16 +264,16 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 32px;
+    margin-top: 36px;
 }
 
 .zabun-pagination a, .zabun-pagination span {
     padding: 8px 14px;
     border: 1px solid var(--zabun-border);
-    border-radius: 6px;
+    border-radius: 2px;
     text-decoration: none;
     color: var(--zabun-text);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
 }
 
@@ -211,216 +284,13 @@
 }
 
 /* ==========================================================================
-   Property Detail View
-   ========================================================================== */
-.zabun-detail-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 0;
-}
-
-.zabun-detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.zabun-detail-title-block h1 {
-    margin: 0 0 6px 0;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--zabun-text);
-}
-
-.zabun-detail-price {
-    font-size: 32px;
-    font-weight: 800;
-    color: var(--zabun-primary);
-}
-
-.zabun-detail-gallery {
-    margin-bottom: 30px;
-}
-
-.zabun-gallery-main {
-    width: 100%;
-    max-height: 520px;
-    border-radius: var(--zabun-radius);
-    overflow: hidden;
-    margin-bottom: 12px;
-    background: #000;
-}
-
-.zabun-gallery-main img {
-    width: 100%;
-    height: 100%;
-    max-height: 520px;
-    object-fit: cover;
-    display: block;
-}
-
-.zabun-gallery-thumbs {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-}
-
-.zabun-thumb-item {
-    width: 90px;
-    height: 65px;
-    flex-shrink: 0;
-    border-radius: 6px;
-    overflow: hidden;
-    cursor: pointer;
-    opacity: 0.6;
-    border: 2px solid transparent;
-    transition: opacity 0.2s ease, border-color 0.2s ease;
-}
-
-.zabun-thumb-item.active, .zabun-thumb-item:hover {
-    opacity: 1;
-    border-color: var(--zabun-primary);
-}
-
-.zabun-thumb-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.zabun-detail-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 32px;
-}
-
-@media (max-width: 840px) {
-    .zabun-detail-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.zabun-facts-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    border: 1px solid var(--zabun-border);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.zabun-facts-table th, .zabun-facts-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--zabun-border);
-    font-size: 14px;
-}
-
-.zabun-facts-table th {
-    background: #f9fafb;
-    color: var(--zabun-text-muted);
-    font-weight: 500;
-    width: 35%;
-    text-align: left;
-}
-
-.zabun-facts-table td {
-    color: var(--zabun-text);
-    font-weight: 600;
-}
-
-.zabun-facts-table tr:last-child th, .zabun-facts-table tr:last-child td {
-    border-bottom: none;
-}
-
-.zabun-sidebar-card {
-    background: #ffffff;
-    border: 1px solid var(--zabun-border);
-    border-radius: var(--zabun-radius);
-    padding: 24px;
-    box-shadow: var(--zabun-shadow);
-}
-
-.zabun-sidebar-card h3 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    font-size: 18px;
-}
-
-/* ==========================================================================
-   Search / Filter Bar
-   ========================================================================== */
-.zabun-search-bar {
-    background: #ffffff;
-    border: 1px solid var(--zabun-border);
-    border-radius: var(--zabun-radius);
-    padding: 20px;
-    box-shadow: var(--zabun-shadow);
-    margin-bottom: 28px;
-}
-
-.zabun-search-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
-    gap: 16px;
-    align-items: flex-end;
-}
-
-.zabun-form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.zabun-form-field label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--zabun-text);
-}
-
-.zabun-form-field input, .zabun-form-field select {
-    padding: 10px 14px;
-    border: 1px solid var(--zabun-border);
-    border-radius: 6px;
-    font-size: 14px;
-    outline: none;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.zabun-form-field input:focus, .zabun-form-field select:focus {
-    border-color: var(--zabun-primary);
-}
-
-.zabun-search-submit {
-    background: var(--zabun-primary);
-    color: #ffffff;
-    padding: 11px 24px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    height: 42px;
-}
-
-.zabun-search-submit:hover {
-    background: var(--zabun-primary-hover);
-}
-
-/* ==========================================================================
    Empty State
    ========================================================================== */
 .zabun-empty-state {
     padding: 48px 24px;
     text-align: center;
-    background: #f9fafb;
+    background: var(--zabun-paper);
     border: 1px dashed var(--zabun-border);
-    border-radius: var(--zabun-radius);
-    color: var(--zabun-text-muted);
+    border-radius: 2px;
+    color: var(--zabun-text-soft);
 }
