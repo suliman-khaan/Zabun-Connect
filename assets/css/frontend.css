@@ -125,7 +125,7 @@
     text-transform: uppercase;
     color: var(--zabun-paper-card);
     background: var(--zabun-brass-deep);
-    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)!important;
     z-index: 2;
 }
 
@@ -1464,4 +1464,161 @@ h2.zabun-section-heading {
     border: 1px dashed var(--zabun-border);
     border-radius: 2px;
     color: var(--zabun-text-soft);
+}
+
+/* ==========================================================================
+   Select2 Dropdown Integration & Theme Styling
+   ========================================================================== */
+
+/* Hero Row Select2 Container */
+.zabun-hero-row .select2-container {
+    width: 100% !important;
+    display: block;
+}
+
+.zabun-hero-row .select2-container .select2-selection--single {
+    height: 28px !important;
+    line-height: 28px !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer;
+}
+
+.zabun-hero-row .select2-container--default .select2-selection--single .select2-selection__rendered {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--zabun-text);
+    padding-left: 0 !important;
+    padding-right: 20px !important;
+    line-height: 28px !important;
+}
+
+.zabun-hero-row .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 28px !important;
+    right: 0 !important;
+    top: 0 !important;
+    width: 18px !important;
+}
+
+.zabun-hero-row .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--zabun-secondary) transparent transparent transparent;
+    border-width: 5px 4px 0 4px;
+    margin-top: -2px;
+}
+
+.zabun-hero-row .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent var(--zabun-secondary) transparent;
+    border-width: 0 4px 5px 4px;
+}
+
+/* Expanded Drawer Select2 Container */
+.zabun-expanded-drawer .select2-container {
+    width: 100% !important;
+}
+
+.zabun-expanded-drawer .select2-container .select2-selection--single {
+    height: 38px !important;
+    border: 1px solid var(--zabun-border) !important;
+    border-radius: 2px !important;
+    background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 10px !important;
+    transition: border-color .15s ease;
+    cursor: pointer;
+}
+
+.zabun-expanded-drawer .select2-container--default.select2-container--open .select2-selection--single,
+.zabun-expanded-drawer .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: var(--zabun-primary) !important;
+}
+
+.zabun-expanded-drawer .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--zabun-text);
+    font-size: 13px;
+    padding: 0 !important;
+    line-height: 36px !important;
+}
+
+.zabun-expanded-drawer .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+    right: 8px !important;
+}
+
+/* Select2 Dropdown Popup Positioning */
+.zabun-select2-dropdown.select2-dropdown,
+.select2-dropdown {
+    border: 1px solid var(--zabun-border) !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16) !important;
+    font-family: inherit;
+    font-size: 13.5px;
+    z-index: 9999999 !important;
+    overflow: hidden;
+}
+
+.select2-container--open .select2-dropdown--below {
+    margin-top: 6px !important;
+}
+
+.select2-container--open .select2-dropdown--above {
+    margin-top: -6px !important;
+}
+
+.zabun-select2-dropdown .select2-search--dropdown,
+.select2-dropdown .select2-search--dropdown {
+    padding: 8px 10px;
+    background: var(--zabun-paper);
+    border-bottom: 1px solid var(--zabun-border);
+}
+
+.zabun-select2-dropdown .select2-search__field,
+.select2-dropdown .select2-search__field {
+    border: 1px solid var(--zabun-border) !important;
+    border-radius: 3px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    background: #ffffff !important;
+    color: var(--zabun-text) !important;
+    outline: none !important;
+    box-sizing: border-box;
+}
+
+.zabun-select2-dropdown .select2-search__field:focus,
+.select2-dropdown .select2-search__field:focus {
+    border-color: var(--zabun-primary) !important;
+}
+
+.zabun-select2-dropdown .select2-results__options,
+.select2-dropdown .select2-results__options {
+    max-height: 240px;
+    padding: 4px 0;
+}
+
+.zabun-select2-dropdown .select2-results__option,
+.select2-dropdown .select2-results__option {
+    padding: 8px 14px;
+    color: var(--zabun-text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+}
+
+.zabun-select2-dropdown .select2-results__option--highlighted[aria-selected],
+.select2-dropdown .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--zabun-primary) !important;
+    color: #ffffff !important;
+}
+
+.zabun-select2-dropdown .select2-results__option[aria-selected="true"],
+.select2-dropdown .select2-results__option[aria-selected="true"] {
+    background-color: var(--zabun-mist);
+    color: var(--zabun-primary);
+    font-weight: 600;
 }

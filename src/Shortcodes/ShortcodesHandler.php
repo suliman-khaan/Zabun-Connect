@@ -45,17 +45,36 @@ class ShortcodesHandler {
      * Register frontend assets.
      */
     public function register_assets(): void {
+        if ( ! wp_script_is( 'select2', 'registered' ) ) {
+            wp_register_script(
+                'select2',
+                'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
+                [ 'jquery' ],
+                '4.1.0-rc.0',
+                true
+            );
+        }
+
+        if ( ! wp_style_is( 'select2', 'registered' ) ) {
+            wp_register_style(
+                'select2',
+                'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
+                [],
+                '4.1.0-rc.0'
+            );
+        }
+
         wp_register_style(
             'zabun-connect-frontend',
             ZABUN_CONNECT_URL . 'assets/css/frontend.css',
-            [],
+            [ 'select2' ],
             ZABUN_CONNECT_VERSION
         );
 
         wp_register_script(
             'zabun-connect-frontend',
             ZABUN_CONNECT_URL . 'assets/js/frontend.js',
-            [ 'jquery' ],
+            [ 'jquery', 'select2' ],
             ZABUN_CONNECT_VERSION,
             true
         );
@@ -65,6 +84,8 @@ class ShortcodesHandler {
      * Enqueue assets when shortcode renders.
      */
     public function enqueue_assets(): void {
+        wp_enqueue_style( 'select2' );
+        wp_enqueue_script( 'select2' );
         wp_enqueue_style( 'zabun-connect-frontend' );
         wp_enqueue_script( 'zabun-connect-frontend' );
     }

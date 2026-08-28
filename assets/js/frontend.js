@@ -60,6 +60,57 @@
         });
 
         // -------------------------------------------------------------
+        // Select2 Dropdowns Initialization
+        // -------------------------------------------------------------
+        function initZabunSelect2($context) {
+            if (!$.fn.select2) return;
+
+            var $scope = $context && $context.length ? $context : $(document);
+            $scope.find('.zabun-search-hero select.zabun-control, .zabun-search-bar select.zabun-control').each(function() {
+                var $select = $(this);
+                if (!$select.hasClass('select2-hidden-accessible')) {
+                    $select.select2({
+                        width: '100%',
+                        dropdownAutoWidth: true,
+                        dropdownCssClass: 'zabun-select2-dropdown',
+                        minimumResultsForSearch: 8,
+                        dropdownParent: $('body'),
+                    });
+                }
+            });
+        }
+
+        initZabunSelect2();
+
+        // Prevent label click glitch on Select2 controls
+        $(document).on('click', '.zabun-field label', function(e) {
+            var forId = $(this).attr('for');
+            if (forId) {
+                var $target = $('#' + forId);
+                if ($target.hasClass('select2-hidden-accessible')) {
+                    e.preventDefault();
+                    $target.select2('open');
+                }
+            }
+        });
+
+        // Re-initialize when expanded drawer is opened
+        $(document).on('click', '.zabun-btn-more', function() {
+            setTimeout(function() {
+                initZabunSelect2();
+            }, 100);
+        });
+
+        // Re-initialize for Elementor dynamic render
+        $(window).on('elementor/frontend/init', function() {
+            if (window.elementorFrontend && window.elementorFrontend.hooks) {
+                window.elementorFrontend.hooks.addAction('frontend/element_ready/zabun_property_search.default', function($scope) {
+                    initZabunSelect2($scope);
+                });
+            }
+        });
+
+        // -------------------------------------------------------------
         // 4. Reset Search Filters
         // -------------------------------------------------------------
         $(document).on('click', '.zabun-link-reset', function(e) {
@@ -70,9 +121,13 @@
             // Clear text and numeric inputs
             $form.find('input[type="text"], input[type="number"]').val('');
             
-            // Reset dropdown selects
+            // Reset dropdown selects & trigger Select2 update
             $form.find('select').each(function() {
-                $(this).prop('selectedIndex', 0).val('');
+                var $sel = $(this);
+                $sel.prop('selectedIndex', 0).val('');
+                if ($.fn.select2 && $sel.hasClass('select2-hidden-accessible')) {
+                    $sel.trigger('change.select2');
+                }
             });
 
             // Reset tab to first tab
