@@ -42,25 +42,35 @@ class ListingsRepository {
         $where_sql = ! empty( $where_clauses ) ? 'WHERE ' . implode( ' AND ', $where_clauses ) : '';
 
         // Ordering
-        $allowed_orderby = [
-            'date'        => 'created_at',
-            'price'       => 'price',
-            'title'       => 'title',
-            'bedrooms'    => 'bedrooms',
-            'living_area' => 'living_area',
-            'id'          => 'id',
-        ];
-
         $orderby_key = $args['orderby'] ?? 'date';
-        $orderby_col = $allowed_orderby[ $orderby_key ] ?? 'created_at';
         $order_dir   = strtoupper( $args['order'] ?? 'DESC' ) === 'ASC' ? 'ASC' : 'DESC';
+
+        if ( $orderby_key === 'price_asc' ) {
+            $orderby_sql = 'price ASC';
+        } elseif ( $orderby_key === 'price_desc' ) {
+            $orderby_sql = 'price DESC';
+        } elseif ( $orderby_key === 'living_area_desc' ) {
+            $orderby_sql = 'COALESCE(living_area, land_area, 0) DESC';
+        } else {
+            $allowed_orderby = [
+                'date'        => 'updated_at',
+                'created_at'  => 'created_at',
+                'price'       => 'price',
+                'title'       => 'title',
+                'city'        => 'city',
+                'living_area' => 'living_area',
+                'id'          => 'id',
+            ];
+            $orderby_col = $allowed_orderby[ $orderby_key ] ?? 'updated_at';
+            $orderby_sql = "{$orderby_col} {$order_dir}";
+        }
 
         // Pagination
         $limit  = isset( $args['limit'] ) ? max( 1, min( 100, (int) $args['limit'] ) ) : 12;
         $page   = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
         $offset = isset( $args['offset'] ) ? max( 0, (int) $args['offset'] ) : ( ( $page - 1 ) * $limit );
 
-        $query = "SELECT * FROM {$table_name} {$where_sql} ORDER BY {$orderby_col} {$order_dir} LIMIT %d OFFSET %d";
+        $query = "SELECT * FROM {$table_name} {$where_sql} ORDER BY {$orderby_sql} LIMIT %d OFFSET %d";
         $params[] = $limit;
         $params[] = $offset;
 
@@ -112,7 +122,11 @@ class ListingsRepository {
             ARRAY_A
         );
 
-        return $row ? $this->format_record( $row ) : null;
+        if ( ! $row ) {
+            return null;
+        }
+
+        return $this->format_record( $row );
     }
 
     /**
@@ -130,7 +144,11 @@ class ListingsRepository {
             ARRAY_A
         );
 
-        return $row ? $this->format_record( $row ) : null;
+        if ( ! $row ) {
+            return null;
+        }
+
+        return $this->format_record( $row );
     }
 
     /**
@@ -182,12 +200,56 @@ class ListingsRepository {
     }
 
     /**
+     * Get min and max price from active listings.
+     *
+     * @return array [ 'min' => float, 'max' => float ]
+     */
+    public function get_price_range(): array {
+        global $wpdb;
+        $table_name = Schema::get_table_name();
+
+        $row = $wpdb->get_row(
+            "SELECT MIN(price) AS min_price, MAX(price) AS max_price FROM {$table_name} WHERE price > 0",
+            ARRAY_A
+        );
+
+        return [
+            'min' => isset( $row['min_price'] ) ? (float) $row['min_price'] : 0,
+            'max' => isset( $row['max_price'] ) ? (float) $row['max_price'] : 2000000,
+        ];
+    }
+
+    /**
+     * Get min and max surface area from active listings.
+     *
+     * @return array [ 'min' => float, 'max' => float ]
+     */
+    public function get_area_range(): array {
+        global $wpdb;
+        $table_name = Schema::get_table_name();
+
+        $row = $wpdb->get_row(
+            "SELECT MIN(NULLIF(living_area, 0)) AS min_living, MAX(living_area) AS max_living, MIN(NULLIF(land_area, 0)) AS min_land, MAX(land_area) AS max_land FROM {$table_name}",
+            ARRAY_A
+        );
+
+        $min_candidates = array_filter( [ $row['min_living'] ?? null, $row['min_land'] ?? null ], 'is_numeric' );
+        $max_candidates = array_filter( [ $row['max_living'] ?? null, $row['max_land'] ?? null ], 'is_numeric' );
+
+        return [
+            'min' => ! empty( $min_candidates ) ? (float) min( $min_candidates ) : 0,
+            'max' => ! empty( $max_candidates ) ? (float) max( $max_candidates ) : 5000,
+        ];
+    }
+
+    /**
      * Build parameterized WHERE clauses and parameters from filters.
      *
      * @param array $args
      * @return array [ $where_clauses, $params ]
      */
     private function build_where_clauses( array $args ): array {
+        global $wpdb;
         $clauses = [];
         $params  = [];
 
@@ -226,9 +288,23 @@ class ListingsRepository {
             $params[]  = (int) $args['bathrooms'];
         }
 
+        if ( isset( $args['min_area'] ) && is_numeric( $args['min_area'] ) && (float) $args['min_area'] > 0 ) {
+            $clauses[] = '( ( living_area IS NOT NULL AND living_area >= %f ) OR ( ( living_area IS NULL OR living_area = 0 ) AND land_area >= %f ) )';
+            $params[]  = (float) $args['min_area'];
+            $params[]  = (float) $args['min_area'];
+        }
+
+        if ( isset( $args['max_area'] ) && is_numeric( $args['max_area'] ) && (float) $args['max_area'] > 0 ) {
+            $clauses[] = '( ( living_area IS NOT NULL AND living_area <= %f ) OR ( ( living_area IS NULL OR living_area = 0 ) AND land_area <= %f ) )';
+            $params[]  = (float) $args['max_area'];
+            $params[]  = (float) $args['max_area'];
+        }
+
         if ( ! empty( $args['search'] ) || ! empty( $args['keyword'] ) ) {
-            $search_term = '%' . $wpdb_like_escaped = sanitize_text_field( $args['search'] ?? $args['keyword'] ) . '%';
-            $clauses[]   = '(title LIKE %s OR address LIKE %s OR city LIKE %s OR postal_code LIKE %s)';
+            $raw_search  = sanitize_text_field( $args['search'] ?? $args['keyword'] );
+            $search_term = '%' . $wpdb->esc_like( $raw_search ) . '%';
+            $clauses[]   = '(title LIKE %s OR address LIKE %s OR city LIKE %s OR postal_code LIKE %s OR external_id LIKE %s)';
+            $params[]    = $search_term;
             $params[]    = $search_term;
             $params[]    = $search_term;
             $params[]    = $search_term;

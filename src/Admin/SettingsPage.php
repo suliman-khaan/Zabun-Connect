@@ -181,6 +181,16 @@ class SettingsPage {
             ]
         );
 
+        register_setting(
+            'zabun_connect_settings',
+            'zabun_connect_currency_symbol',
+            [
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+                'default'           => '€',
+            ]
+        );
+
         // API Section
         add_settings_section(
             'zabun_api_section',
@@ -255,6 +265,24 @@ class SettingsPage {
             [ $this, 'render_sync_interval_field' ],
             'zabun-connect',
             'zabun_sync_section'
+        );
+
+        // Display Formatting Section
+        add_settings_section(
+            'zabun_display_section',
+            __( 'Display & Formatting', 'zabun-connect' ),
+            function () {
+                echo '<p>' . esc_html__( 'Configure how listings and prices are formatted across your site.', 'zabun-connect' ) . '</p>';
+            },
+            'zabun-connect'
+        );
+
+        add_settings_field(
+            'zabun_connect_currency_symbol',
+            __( 'Currency Symbol', 'zabun-connect' ),
+            [ $this, 'render_currency_symbol_field' ],
+            'zabun-connect',
+            'zabun_display_section'
         );
     }
 
@@ -364,6 +392,17 @@ class SettingsPage {
             <option value="daily" <?php selected( $interval, 'daily' ); ?>><?php esc_html_e( 'Daily (Every 24 hours)', 'zabun-connect' ); ?></option>
         </select>
         <p class="description"><?php esc_html_e( 'How often listings are fetched and updated in local cache.', 'zabun-connect' ); ?></p>
+        <?php
+    }
+
+    public function render_currency_symbol_field(): void {
+        $val = (string) get_option( 'zabun_connect_currency_symbol', '€' );
+        ?>
+        <input type="text" id="zabun_connect_currency_symbol" name="zabun_connect_currency_symbol" 
+               value="<?php echo esc_attr( $val ); ?>" 
+               placeholder="€" 
+               class="small-text" />
+        <p class="description"><?php esc_html_e( 'Currency symbol displayed with listing prices across your site (e.g. €, $, £, CHF, AED). Default: €', 'zabun-connect' ); ?></p>
         <?php
     }
 

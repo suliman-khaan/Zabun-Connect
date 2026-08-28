@@ -104,7 +104,11 @@ class ShortcodesHandler {
         $min_price     = ! empty( $_GET['zabun_min_price'] ) ? (float) $_GET['zabun_min_price'] : null;
         $max_price     = ! empty( $_GET['zabun_max_price'] ) ? (float) $_GET['zabun_max_price'] : null;
         $bedrooms      = ! empty( $_GET['zabun_bedrooms'] ) ? (int) $_GET['zabun_bedrooms'] : null;
+        $bathrooms     = ! empty( $_GET['zabun_bathrooms'] ) ? (int) $_GET['zabun_bathrooms'] : null;
+        $min_area      = ! empty( $_GET['zabun_min_area'] ) ? (float) $_GET['zabun_min_area'] : null;
+        $max_area      = ! empty( $_GET['zabun_max_area'] ) ? (float) $_GET['zabun_max_area'] : null;
         $search        = ! empty( $_GET['zabun_search'] ) ? sanitize_text_field( $_GET['zabun_search'] ) : '';
+        $orderby       = ! empty( $_GET['zabun_orderby'] ) ? sanitize_text_field( $_GET['zabun_orderby'] ) : sanitize_text_field( $atts['orderby'] );
 
         $query_args = [
             'limit'         => (int) $atts['limit'],
@@ -115,8 +119,11 @@ class ShortcodesHandler {
             'min_price'     => $min_price,
             'max_price'     => $max_price,
             'bedrooms'      => $bedrooms,
+            'bathrooms'     => $bathrooms,
+            'min_area'      => $min_area,
+            'max_area'      => $max_area,
             'search'        => $search,
-            'orderby'       => sanitize_text_field( $atts['orderby'] ),
+            'orderby'       => $orderby,
             'order'         => sanitize_text_field( $atts['order'] ),
         ];
 
@@ -190,8 +197,13 @@ class ShortcodesHandler {
         $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
         $status_class = 'status-' . sanitize_html_class( $raw_status );
         
+        $currency = (string) get_option( 'zabun_connect_currency_symbol', '€' );
+        if ( empty( $currency ) ) {
+            $currency = '€';
+        }
+
         $price_formatted = ! empty( $item['price'] ) 
-            ? '€ ' . number_format( (float) $item['price'], 0, ',', '.' ) 
+            ? $currency . ' ' . number_format( (float) $item['price'], 0, ',', '.' ) 
             : __( 'Price on request', 'zabun-connect' );
 
         $freq = ! empty( $item['price_frequency'] ) ? ' / ' . esc_html( $item['price_frequency'] ) : '';
@@ -383,8 +395,13 @@ class ShortcodesHandler {
         $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
         $status_class = 'status-' . sanitize_html_class( $raw_status );
 
+        $currency = (string) get_option( 'zabun_connect_currency_symbol', '€' );
+        if ( empty( $currency ) ) {
+            $currency = '€';
+        }
+
         $price_formatted = ! empty( $property['price'] ) 
-            ? '€ ' . number_format( (float) $property['price'], 0, ',', '.' ) 
+            ? $currency . ' ' . number_format( (float) $property['price'], 0, ',', '.' ) 
             : __( 'Price on request', 'zabun-connect' );
         
         $freq = ! empty( $property['price_frequency'] ) ? ' / ' . esc_html( $property['price_frequency'] ) : '';
@@ -716,15 +733,30 @@ class ShortcodesHandler {
         $repo     = ListingsRepository::instance();
         $cities   = $repo->get_distinct_cities();
         $types    = $repo->get_distinct_types();
-        $statuses = [
+        $db_statuses = $repo->get_distinct_statuses();
+
+        $status_label_map = [
             'for_sale' => __( 'For sale', 'zabun-connect' ),
             'for_rent' => __( 'For rent', 'zabun-connect' ),
             'sold'     => __( 'Sold', 'zabun-connect' ),
             'rented'   => __( 'Rented', 'zabun-connect' ),
         ];
 
+        $statuses = [];
+        if ( ! empty( $db_statuses ) ) {
+            foreach ( $db_statuses as $st ) {
+                $st_key = strtolower( trim( $st ) );
+                if ( ! empty( $st_key ) ) {
+                    $statuses[ $st_key ] = $status_label_map[ $st_key ] ?? ucwords( str_replace( '_', ' ', $st_key ) );
+                }
+            }
+        }
+        if ( empty( $statuses ) ) {
+            $statuses = $status_label_map;
+        }
+
         $curr_search    = sanitize_text_field( $_GET['zabun_search'] ?? '' );
-        $curr_status    = sanitize_text_field( $_GET['zabun_status'] ?? 'for_sale' );
+        $curr_status    = sanitize_text_field( $_GET['zabun_status'] ?? ( array_key_first( $statuses ) ?? 'for_sale' ) );
         $curr_city      = sanitize_text_field( $_GET['zabun_city'] ?? '' );
         $curr_type      = sanitize_text_field( $_GET['zabun_type'] ?? '' );
         $curr_min_price = sanitize_text_field( $_GET['zabun_min_price'] ?? '' );
@@ -735,15 +767,54 @@ class ShortcodesHandler {
         $curr_max_area  = sanitize_text_field( $_GET['zabun_max_area'] ?? '' );
         $curr_order     = sanitize_text_field( $_GET['zabun_orderby'] ?? 'date' );
 
+        // Dynamic price options based on actual DB prices
+        $price_range  = $repo->get_price_range();
+        $db_min_price = $price_range['min'];
+        $db_max_price = $price_range['max'];
+
         $price_options = [
-            ''        => __( 'Any', 'zabun-connect' ),
-            '100000'  => '€ 100.000',
-            '250000'  => '€ 250.000',
-            '500000'  => '€ 500.000',
-            '750000'  => '€ 750.000',
-            '1000000' => '€ 1.000.000',
-            '1500000' => '€ 1.500.000+',
+            '' => __( 'Any', 'zabun-connect' ),
         ];
+
+        $milestones = [];
+        // If there are rental or low-price listings
+        if ( $db_min_price > 0 && $db_min_price < 5000 ) {
+            $rental_steps = [ 500, 750, 1000, 1250, 1500, 2000, 2500, 3000, 4000, 5000 ];
+            foreach ( $rental_steps as $rs ) {
+                if ( $rs >= $db_min_price && $rs <= $db_max_price ) {
+                    $milestones[] = $rs;
+                }
+            }
+        }
+
+        // Sale listings steps
+        $sale_steps = [ 100000, 150000, 200000, 250000, 300000, 400000, 500000, 600000, 750000, 1000000, 1250000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 7500000, 10000000 ];
+        foreach ( $sale_steps as $ss ) {
+            if ( $ss <= ( $db_max_price * 1.25 ) && ( $ss >= 75000 || empty( $milestones ) ) ) {
+                $milestones[] = $ss;
+            }
+        }
+
+        if ( empty( $milestones ) ) {
+            $milestones = [ 100000, 250000, 500000, 750000, 1000000, 1500000 ];
+        }
+
+        $milestones = array_unique( $milestones );
+        sort( $milestones );
+
+        $currency = (string) get_option( 'zabun_connect_currency_symbol', '€' );
+        if ( empty( $currency ) ) {
+            $currency = '€';
+        }
+
+        foreach ( $milestones as $pval ) {
+            $price_options[ (string) $pval ] = $currency . ' ' . number_format( $pval, 0, ',', '.' );
+        }
+
+        // Dynamic surface area range
+        $area_range  = $repo->get_area_range();
+        $db_min_area = (int) round( $area_range['min'] );
+        $db_max_area = (int) round( $area_range['max'] );
 
         ob_start();
         ?>
@@ -756,7 +827,7 @@ class ShortcodesHandler {
                 <!-- Status Tabs -->
                 <div class="zabun-status-tabs">
                     <?php foreach ( $statuses as $st_key => $st_name ) : ?>
-                        <button type="button" class="<?php echo ( $curr_status === $st_key || ( empty( $curr_status ) && $st_key === 'for_sale' ) ) ? 'active' : ''; ?>" data-status="<?php echo esc_attr( $st_key ); ?>">
+                        <button type="button" class="<?php echo ( $curr_status === $st_key || ( empty( $curr_status ) && $st_key === array_key_first( $statuses ) ) ) ? 'active' : ''; ?>" data-status="<?php echo esc_attr( $st_key ); ?>">
                             <?php echo esc_html( $st_name ); ?>
                         </button>
                     <?php endforeach; ?>
@@ -866,9 +937,9 @@ class ShortcodesHandler {
                         <div class="zabun-field">
                             <label><?php esc_html_e( 'Surface (m²)', 'zabun-connect' ); ?></label>
                             <div class="zabun-range-pair">
-                                <input class="zabun-control" type="number" name="zabun_min_area" placeholder="<?php esc_attr_e( 'Min', 'zabun-connect' ); ?>" value="<?php echo esc_attr( $curr_min_area ); ?>" />
+                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_min_area" placeholder="<?php echo esc_attr( $db_min_area > 0 ? sprintf( __( 'Min (%d m²)', 'zabun-connect' ), $db_min_area ) : __( 'Min', 'zabun-connect' ) ); ?>" value="<?php echo esc_attr( $curr_min_area ); ?>" />
                                 <span class="to">—</span>
-                                <input class="zabun-control" type="number" name="zabun_max_area" placeholder="<?php esc_attr_e( 'Max', 'zabun-connect' ); ?>" value="<?php echo esc_attr( $curr_max_area ); ?>" />
+                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_max_area" placeholder="<?php echo esc_attr( $db_max_area > 0 ? sprintf( __( 'Max (%d m²)', 'zabun-connect' ), $db_max_area ) : __( 'Max', 'zabun-connect' ) ); ?>" value="<?php echo esc_attr( $curr_max_area ); ?>" />
                             </div>
                         </div>
                     </div>
