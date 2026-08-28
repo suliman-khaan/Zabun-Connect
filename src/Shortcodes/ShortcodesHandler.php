@@ -139,15 +139,32 @@ class ShortcodesHandler {
                     <?php endforeach; ?>
                 </div>
 
-                <?php if ( $atts['pagination'] === 'yes' && $total_pages > 1 ) : ?>
-                    <div class="zabun-pagination">
-                        <?php for ( $i = 1; $i <= $total_pages; $i++ ) : ?>
-                            <?php if ( $i === $current_page ) : ?>
-                                <span class="current"><?php echo esc_html( $i ); ?></span>
-                            <?php else : ?>
-                                <a href="<?php echo esc_url( add_query_arg( 'zabun_page', $i ) ); ?>"><?php echo esc_html( $i ); ?></a>
-                            <?php endif; ?>
-                        <?php endfor; ?>
+                <?php if ( $atts['pagination'] === 'yes' && $total_items > 0 ) : ?>
+                    <?php
+                    $limit_num = max( 1, (int) $atts['limit'] );
+                    $from_num  = ( ( $current_page - 1 ) * $limit_num ) + 1;
+                    $to_num    = min( $total_items, $current_page * $limit_num );
+                    ?>
+                    <div class="zabun-pagination-wrap">
+                        <div class="zabun-pagination-info">
+                            <?php echo sprintf( esc_html__( 'Showing %1$s–%2$s of %3$s listings', 'zabun-connect' ), number_format_i18n( $from_num ), number_format_i18n( $to_num ), number_format_i18n( $total_items ) ); ?>
+                        </div>
+                        <?php if ( $total_pages > 1 ) : ?>
+                            <div class="zabun-pagination">
+                                <?php
+                                echo paginate_links( [
+                                    'base'      => add_query_arg( 'zabun_page', '%#%' ),
+                                    'format'    => '',
+                                    'prev_text' => '&laquo;',
+                                    'next_text' => '&raquo;',
+                                    'total'     => $total_pages,
+                                    'current'   => max( 1, $current_page ),
+                                    'mid_size'  => 1,
+                                    'end_size'  => 1,
+                                ] );
+                                ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -161,6 +178,7 @@ class ShortcodesHandler {
      *
      * @param array $item
      * @param string $detail_url_base
+     * @param array $custom_icons
      * @return string
      */
     public function render_card_html( array $item, string $detail_url_base = '', array $custom_icons = [] ): string {
@@ -192,7 +210,7 @@ class ShortcodesHandler {
             <div class="zabun-card-media">
                 <span class="zabun-card-tag <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
                 <?php if ( ! empty( $item['featured_image'] ) ) : ?>
-                    <a href="<?php echo esc_url( $detail_link ); ?>">
+                    <a href="<?php echo esc_url( $detail_link ); ?>" class="zabun-card-media-link">
                         <img class="zabun-card-img" src="<?php echo esc_url( $item['featured_image'] ); ?>" alt="<?php echo esc_attr( $item['title'] ); ?>" loading="lazy" />
                     </a>
                 <?php else : ?>
@@ -219,17 +237,22 @@ class ShortcodesHandler {
                 <div class="zabun-card-facts">
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_beds; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                        <span class="num"><?php echo esc_html( $item['bedrooms'] ?: 0 ); ?></span>
+                        <span class="num"><?php echo ! empty( $item['bedrooms'] ) && (int) $item['bedrooms'] > 0 ? (int) $item['bedrooms'] : '-'; ?></span>
                         <span class="label"><?php esc_html_e( 'Beds', 'zabun-connect' ); ?></span>
                     </div>
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_baths; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                        <span class="num"><?php echo esc_html( $item['bathrooms'] ?: 0 ); ?></span>
+                        <span class="num"><?php echo ! empty( $item['bathrooms'] ) && (int) $item['bathrooms'] > 0 ? (int) $item['bathrooms'] : '-'; ?></span>
                         <span class="label"><?php esc_html_e( 'Baths', 'zabun-connect' ); ?></span>
                     </div>
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_area; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                        <span class="num"><?php echo esc_html( $item['living_area'] ? round( (float) $item['living_area'], 1 ) : '-' ); ?></span>
+                        <span class="num"><?php 
+                            $area_val = ! empty( $item['living_area'] ) && (float) $item['living_area'] > 0 
+                                ? round( (float) $item['living_area'] ) 
+                                : ( ! empty( $item['land_area'] ) && (float) $item['land_area'] > 0 ? round( (float) $item['land_area'] ) : '-' );
+                            echo esc_html( $area_val ); 
+                        ?></span>
                         <span class="label"><?php esc_html_e( 'm²', 'zabun-connect' ); ?></span>
                     </div>
                 </div>
@@ -237,6 +260,41 @@ class ShortcodesHandler {
         </article>
         <?php
         return (string) ob_get_clean();
+    }
+
+    /**
+     * Extract string from multilingual array or string.
+     *
+     * @param mixed $val Value which may be string or ['nl'=>'...', 'en'=>'...', 'fr'=>'...'].
+     * @param string $default
+     * @return string
+     */
+    public function extract_multilingual_string( $val, string $default = '' ): string {
+        if ( is_string( $val ) ) {
+            return trim( $val );
+        }
+
+        if ( is_array( $val ) ) {
+            $locale = function_exists( 'get_locale' ) ? strtolower( substr( get_locale(), 0, 2 ) ) : 'nl';
+            if ( ! empty( $val[ $locale ] ) && is_string( $val[ $locale ] ) ) {
+                return trim( $val[ $locale ] );
+            }
+
+            $preference = [ 'nl', 'en', 'fr', 'de' ];
+            foreach ( $preference as $lang ) {
+                if ( ! empty( $val[ $lang ] ) && is_string( $val[ $lang ] ) ) {
+                    return trim( $val[ $lang ] );
+                }
+            }
+
+            foreach ( $val as $k => $v ) {
+                if ( is_string( $v ) && ! empty( trim( $v ) ) ) {
+                    return trim( $v );
+                }
+            }
+        }
+
+        return $default;
     }
 
     /**
@@ -276,11 +334,17 @@ class ShortcodesHandler {
                 : ( $_GET['property_id'] ?? ( $_GET['id'] ?? '' ) ) );
 
         if ( ! empty( $target_id ) ) {
-            if ( is_numeric( $target_id ) ) {
+            $property = $repo->get_listing_by_external_id( sanitize_text_field( $target_id ) );
+            if ( ! $property && is_numeric( $target_id ) ) {
                 $property = $repo->get_listing_by_id( (int) $target_id );
             }
-            if ( ! $property ) {
-                $property = $repo->get_listing_by_external_id( sanitize_text_field( $target_id ) );
+        }
+
+        // Fallback to first active listing if no ID specified (e.g. in Elementor editor or template preview)
+        if ( ! $property ) {
+            $sample_list = $repo->get_listings( [ 'limit' => 1 ] );
+            if ( ! empty( $sample_list[0] ) ) {
+                $property = $sample_list[0];
             }
         }
 
@@ -289,14 +353,31 @@ class ShortcodesHandler {
         }
 
         $gallery = $property['gallery_images'] ?? [];
+        if ( ! is_array( $gallery ) ) {
+            $gallery = [];
+        }
+
+        if ( empty( $gallery ) && ! empty( $property['raw_data']['photos'] ) && is_array( $property['raw_data']['photos'] ) ) {
+            foreach ( $property['raw_data']['photos'] as $p ) {
+                $p_url = is_array( $p ) ? ( $p['url'] ?? ( $p['photo_url'] ?? '' ) ) : $p;
+                if ( ! empty( $p_url ) && ! in_array( $p_url, $gallery, true ) ) {
+                    $gallery[] = $p_url;
+                }
+            }
+        }
+
         if ( empty( $gallery ) && ! empty( $property['featured_image'] ) ) {
             $gallery = [ $property['featured_image'] ];
         }
 
+        if ( empty( $gallery ) && ! empty( $property['raw_data']['photo_url'] ) ) {
+            $gallery = [ $property['raw_data']['photo_url'] ];
+        }
+
         $photo_count = count( $gallery );
         $main_img   = ! empty( $gallery[0] ) ? $gallery[0] : ( $property['featured_image'] ?? '' );
-        $side_img_1 = $gallery[1] ?? ( $gallery[0] ?? '' );
-        $side_img_2 = $gallery[2] ?? ( $gallery[1] ?? ( $gallery[0] ?? '' ) );
+        $side_img_1 = $gallery[1] ?? ( $gallery[0] ?? $main_img );
+        $side_img_2 = $gallery[2] ?? ( $gallery[1] ?? ( $gallery[0] ?? $main_img ) );
 
         $raw_status   = strtolower( trim( $property['status'] ?? 'for_sale' ) );
         $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
@@ -309,7 +390,7 @@ class ShortcodesHandler {
         $freq = ! empty( $property['price_frequency'] ) ? ' / ' . esc_html( $property['price_frequency'] ) : '';
 
         $raw         = $property['raw_data'] ?? [];
-        $description = $raw['description'] ?? ( $raw['remarks'] ?? '' );
+        $description = $this->extract_multilingual_string( $raw['description'] ?? ( $raw['remarks'] ?? ( $raw['description_short'] ?? '' ) ) );
 
         // Extract features/amenities
         $features = [];
@@ -343,36 +424,40 @@ class ShortcodesHandler {
         ob_start();
         ?>
         <div class="zabun-detail-wrap zabun-detail-wrapper">
-            <!-- Breadcrumbs -->
-            <nav class="zabun-crumbs" aria-label="Breadcrumb">
-                <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Home', 'zabun-connect' ); ?></a>
-                <span class="crumb-sep">/</span>
-                <span><?php echo esc_html( $status_label ); ?></span>
-                <?php if ( ! empty( $property['city'] ) ) : ?>
-                    <span class="crumb-sep">/</span>
-                    <span><?php echo esc_html( $property['city'] ); ?></span>
-                <?php endif; ?>
-                <span class="crumb-sep">/</span>
-                <span class="current-crumb"><?php echo esc_html( $property['title'] ); ?></span>
-            </nav>
-
-            <!-- Asymmetrical 3-Photo Gallery -->
+            <!-- Asymmetrical Photo Gallery with Lightbox Support -->
             <?php if ( ! empty( $main_img ) ) : ?>
-                <div class="zabun-detail-gallery">
+                <div class="zabun-detail-gallery <?php echo $photo_count >= 3 ? 'has-3-plus-photos' : ( $photo_count === 2 ? 'has-2-photos' : 'has-1-photo' ); ?>" data-images="<?php echo esc_attr( wp_json_encode( $gallery ) ); ?>">
                     <span class="zabun-card-tag <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
                     
-                    <img class="<?php echo $photo_count > 1 ? 'main-img' : 'gallery-single'; ?>" src="<?php echo esc_url( $main_img ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?>" loading="lazy" />
+                    <img class="<?php echo $photo_count > 1 ? 'main-img' : 'gallery-single'; ?>" src="<?php echo esc_url( $main_img ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?>" data-index="0" loading="lazy" />
                     
                     <?php if ( $photo_count > 1 ) : ?>
-                        <img class="side-img-1" src="<?php echo esc_url( $side_img_1 ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?> 2" loading="lazy" />
+                        <img class="side-img-1" src="<?php echo esc_url( $side_img_1 ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?> 2" data-index="1" loading="lazy" />
                         <?php if ( $photo_count > 2 ) : ?>
-                            <img class="side-img-2" src="<?php echo esc_url( $side_img_2 ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?> 3" loading="lazy" />
+                            <div class="side-img-2-wrap">
+                                <img class="side-img-2" src="<?php echo esc_url( $side_img_2 ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?> 3" data-index="2" loading="lazy" />
+                                <?php if ( $photo_count > 3 ) : ?>
+                                    <div class="gallery-more-overlay" data-index="2">
+                                        <span>+<?php echo esc_html( $photo_count - 3 ); ?></span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if ( $photo_count > 0 ) : ?>
-                        <span class="photo-count-badge">1 / <?php echo esc_html( $photo_count ); ?> <?php esc_html_e( 'photos', 'zabun-connect' ); ?></span>
+                        <button type="button" class="photo-count-badge" data-index="0" aria-label="<?php esc_attr_e( 'View all photos', 'zabun-connect' ); ?>">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                            <span>1 / <?php echo esc_html( $photo_count ); ?> <?php esc_html_e( 'photos', 'zabun-connect' ); ?></span>
+                        </button>
                     <?php endif; ?>
+                </div>
+            <?php else : ?>
+                <div class="zabun-detail-gallery has-placeholder">
+                    <span class="zabun-card-tag <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
+                    <div class="zabun-placeholder-img">
+                        <span><?php esc_html_e( 'No Image Available', 'zabun-connect' ); ?></span>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -395,17 +480,22 @@ class ShortcodesHandler {
                     <div class="zabun-detail-facts-strip">
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_beds; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                            <span class="num"><?php echo esc_html( $property['bedrooms'] ?: 0 ); ?></span>
+                            <span class="num"><?php echo ! empty( $property['bedrooms'] ) && (int) $property['bedrooms'] > 0 ? (int) $property['bedrooms'] : '-'; ?></span>
                             <span class="label"><?php esc_html_e( 'Beds', 'zabun-connect' ); ?></span>
                         </div>
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_baths; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                            <span class="num"><?php echo esc_html( $property['bathrooms'] ?: 0 ); ?></span>
+                            <span class="num"><?php echo ! empty( $property['bathrooms'] ) && (int) $property['bathrooms'] > 0 ? (int) $property['bathrooms'] : '-'; ?></span>
                             <span class="label"><?php esc_html_e( 'Baths', 'zabun-connect' ); ?></span>
                         </div>
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_area; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                            <span class="num"><?php echo esc_html( $property['living_area'] ? round( (float) $property['living_area'], 1 ) : '-' ); ?></span>
+                            <span class="num"><?php 
+                                $detail_area = ! empty( $property['living_area'] ) && (float) $property['living_area'] > 0 
+                                    ? round( (float) $property['living_area'] ) 
+                                    : ( ! empty( $property['land_area'] ) && (float) $property['land_area'] > 0 ? round( (float) $property['land_area'] ) : '-' );
+                                echo esc_html( $detail_area ); 
+                            ?></span>
                             <span class="label"><?php esc_html_e( 'm²', 'zabun-connect' ); ?></span>
                         </div>
                     </div>
@@ -460,10 +550,13 @@ class ShortcodesHandler {
                                     <td><?php echo esc_html( $property['epc_value'] ); ?></td>
                                 </tr>
                             <?php endif; ?>
-                            <?php if ( ! empty( $raw['availability'] ) ) : ?>
+                            <?php 
+                            $avail_str = $this->extract_multilingual_string( $raw['availability'] ?? ( $raw['available'] ?? '' ) );
+                            if ( ! empty( $avail_str ) ) : 
+                            ?>
                                 <tr>
                                     <td><?php esc_html_e( 'Availability', 'zabun-connect' ); ?></td>
-                                    <td><?php echo esc_html( $raw['availability'] ); ?></td>
+                                    <td><?php echo esc_html( $avail_str ); ?></td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -521,8 +614,26 @@ class ShortcodesHandler {
                             <?php echo esc_html( $custom_options['inquiry_btn_text'] ?? __( 'Request a viewing', 'zabun-connect' ) ); ?>
                         </a>
 
-                        <?php if ( ! empty( $raw['brochure_url'] ) || ! empty( $custom_options['show_brochure_btn'] ) ) : ?>
-                            <a href="<?php echo esc_url( $raw['brochure_url'] ?? '#' ); ?>" class="zabun-btn zabun-btn-ghost" target="_blank" rel="noopener">
+                        <?php
+                        // Resolve brochure URL safely from raw data or files
+                        $brochure_url = '';
+                        if ( ! empty( $raw['brochure_url'] ) && is_string( $raw['brochure_url'] ) && $raw['brochure_url'] !== '#' ) {
+                            $brochure_url = $raw['brochure_url'];
+                        } elseif ( ! empty( $custom_options['brochure_url'] ) && is_string( $custom_options['brochure_url'] ) && $custom_options['brochure_url'] !== '#' ) {
+                            $brochure_url = $custom_options['brochure_url'];
+                        } elseif ( ! empty( $raw['files'] ) && is_array( $raw['files'] ) ) {
+                            foreach ( $raw['files'] as $f ) {
+                                if ( ! empty( $f['url'] ) && ( stripos( $f['url'], '.pdf' ) !== false || stripos( $f['url'], 'brochure' ) !== false || stripos( $f['reference'] ?? '', '.pdf' ) !== false ) ) {
+                                    $brochure_url = $f['url'];
+                                    break;
+                                }
+                            }
+                        }
+                        $show_brochure = ( $custom_options['show_brochure_btn'] ?? true ) && ! empty( $brochure_url );
+                        ?>
+
+                        <?php if ( $show_brochure ) : ?>
+                            <a href="<?php echo esc_url( $brochure_url ); ?>" class="zabun-btn zabun-btn-ghost" target="_blank" rel="noopener">
                                 <?php esc_html_e( 'Download brochure', 'zabun-connect' ); ?>
                             </a>
                         <?php endif; ?>
@@ -538,6 +649,39 @@ class ShortcodesHandler {
                     </p>
                 </div>
             </div>
+
+            <!-- Fullscreen Photo Gallery Lightbox Modal -->
+            <?php if ( ! empty( $gallery ) ) : ?>
+                <div class="zabun-lightbox" id="zabun-lightbox" aria-hidden="true" style="display: none;">
+                    <div class="zabun-lightbox-overlay"></div>
+                    <div class="zabun-lightbox-content">
+                        <button type="button" class="zabun-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'zabun-connect' ); ?>">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </button>
+                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-prev" aria-label="<?php esc_attr_e( 'Previous', 'zabun-connect' ); ?>">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-next" aria-label="<?php esc_attr_e( 'Next', 'zabun-connect' ); ?>">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                        <div class="zabun-lightbox-img-wrap">
+                            <img class="zabun-lightbox-img" src="<?php echo esc_url( $main_img ); ?>" alt="<?php echo esc_attr( $property['title'] ); ?>" />
+                        </div>
+                        <div class="zabun-lightbox-foot">
+                            <div class="zabun-lightbox-counter">
+                                <span class="curr-index">1</span> / <span class="total-count"><?php echo esc_html( $photo_count ); ?></span>
+                            </div>
+                            <div class="zabun-lightbox-thumbs">
+                                <?php foreach ( $gallery as $idx => $img_url ) : ?>
+                                    <button type="button" class="zabun-thumb <?php echo $idx === 0 ? 'active' : ''; ?>" data-index="<?php echo esc_attr( $idx ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Photo %d', 'zabun-connect' ), $idx + 1 ) ); ?>">
+                                        <img src="<?php echo esc_url( $img_url ); ?>" alt="" />
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
         return (string) ob_get_clean();
@@ -665,6 +809,10 @@ class ShortcodesHandler {
                         <button class="zabun-btn-more" id="more-toggle" type="button" aria-expanded="false">
                             <span><?php esc_html_e( 'More filters', 'zabun-connect' ); ?></span>
                             <svg width="11" height="7" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="zabun-btn-clear" type="button" title="<?php esc_attr_e( 'Clear all filters', 'zabun-connect' ); ?>" aria-label="<?php esc_attr_e( 'Clear all filters', 'zabun-connect' ); ?>">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                            <span><?php esc_html_e( 'Clear', 'zabun-connect' ); ?></span>
                         </button>
                         <button class="zabun-btn-search" type="submit">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>

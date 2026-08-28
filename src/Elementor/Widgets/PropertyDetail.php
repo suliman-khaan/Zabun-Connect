@@ -242,25 +242,44 @@ class PropertyDetail extends Widget_Base {
             ]
         );
 
-        $this->add_control(
-            'badge_count_bg',
+        $this->add_responsive_control(
+            'image_object_fit',
             [
-                'label'     => __( 'Photo Counter Background', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
-                'separator' => 'before',
+                'label'     => __( 'Image Object Fit', 'zabun-connect' ),
+                'type'      => Controls_Manager::SELECT,
+                'default'   => 'cover',
+                'options'   => [
+                    'cover'      => __( 'Cover', 'zabun-connect' ),
+                    'contain'    => __( 'Contain', 'zabun-connect' ),
+                    'fill'       => __( 'Fill', 'zabun-connect' ),
+                    'scale-down' => __( 'Scale Down', 'zabun-connect' ),
+                    'none'       => __( 'None', 'zabun-connect' ),
+                ],
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-detail-gallery .photo-count-badge' => 'background-color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-detail-gallery img' => 'object-fit: {{VALUE}};',
                 ],
             ]
         );
 
-        $this->add_control(
-            'badge_count_color',
+        $this->add_responsive_control(
+            'image_object_position',
             [
-                'label'     => __( 'Photo Counter Text Color', 'zabun-connect' ),
-                'type'      => Controls_Manager::COLOR,
+                'label'     => __( 'Image Object Position', 'zabun-connect' ),
+                'type'      => Controls_Manager::SELECT,
+                'default'   => 'center center',
+                'options'   => [
+                    'center center' => __( 'Center Center', 'zabun-connect' ),
+                    'center top'    => __( 'Center Top', 'zabun-connect' ),
+                    'center bottom' => __( 'Center Bottom', 'zabun-connect' ),
+                    'left top'      => __( 'Left Top', 'zabun-connect' ),
+                    'left center'   => __( 'Left Center', 'zabun-connect' ),
+                    'left bottom'   => __( 'Left Bottom', 'zabun-connect' ),
+                    'right top'     => __( 'Right Top', 'zabun-connect' ),
+                    'right center'  => __( 'Right Center', 'zabun-connect' ),
+                    'right bottom'  => __( 'Right Bottom', 'zabun-connect' ),
+                ],
                 'selectors' => [
-                    '{{WRAPPER}} .zabun-detail-gallery .photo-count-badge' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .zabun-detail-gallery img' => 'object-position: {{VALUE}};',
                 ],
             ]
         );

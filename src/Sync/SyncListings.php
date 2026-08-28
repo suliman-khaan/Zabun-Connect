@@ -78,9 +78,11 @@ class SyncListings {
     public function sync( ?array $items = null ): array {
         global $wpdb;
 
+        $client = null;
         if ( null === $items ) {
             $client = new ZabunClient();
             $response = $client->fetch_listings();
+            
             // Zabun API returns either array directly or envelope with data/items
             $items = isset( $response['data'] ) 
                 ? (array) $response['data'] 
@@ -98,6 +100,21 @@ class SyncListings {
         foreach ( $items as $raw_item ) {
             if ( ! is_array( $raw_item ) ) {
                 continue;
+            }
+
+            $property_id = (string) ( $raw_item['property_id'] ?? $raw_item['id'] ?? $raw_item['external_id'] ?? '' );
+            
+            // If we have a Zabun client and property ID, fetch the full extended object to ensure 100% complete data
+            if ( $client && ! empty( $property_id ) && ( empty( $raw_item['title'] ) || ! isset( $raw_item['description'] ) ) ) {
+                try {
+                    $detailed = $client->fetch_listing( $property_id );
+                    if ( is_array( $detailed ) && ! empty( $detailed ) ) {
+                        // Merge detailed data with base item
+                        $raw_item = array_merge( $raw_item, $detailed );
+                    }
+                } catch ( \Throwable $e ) {
+                    // Fallback to base raw_item if detail fetch fails
+                }
             }
 
             $mapped = $this->map_item( $raw_item );
@@ -148,47 +165,207 @@ class SyncListings {
     }
 
     /**
+     * Extract string from multilingual array or string.
+     *
+     * @param mixed $val Value which may be string or ['nl'=>'...', 'en'=>'...', 'fr'=>'...'].
+     * @param string $default
+     * @return string
+     */
+    public function extract_multilingual_string( $val, string $default = '' ): string {
+        if ( is_string( $val ) ) {
+            return trim( $val );
+        }
+
+        if ( is_array( $val ) ) {
+            // Check current site locale preference
+            $locale = function_exists( 'get_locale' ) ? strtolower( substr( get_locale(), 0, 2 ) ) : 'nl';
+            if ( ! empty( $val[ $locale ] ) && is_string( $val[ $locale ] ) ) {
+                return trim( $val[ $locale ] );
+            }
+
+            // Fallback order: nl -> en -> fr -> de -> any non-empty value
+            $preference = [ 'nl', 'en', 'fr', 'de' ];
+            foreach ( $preference as $lang ) {
+                if ( ! empty( $val[ $lang ] ) && is_string( $val[ $lang ] ) ) {
+                    return trim( $val[ $lang ] );
+                }
+            }
+
+            foreach ( $val as $k => $v ) {
+                if ( is_string( $v ) && ! empty( trim( $v ) ) ) {
+                    return trim( $v );
+                }
+            }
+        }
+
+        return $default;
+    }
+
+    /**
      * Map raw API response item to database schema fields.
      *
      * @param array $raw
      * @return array
      */
     public function map_item( array $raw ): array {
-        $external_id = (string) ( $raw['id'] ?? $raw['external_id'] ?? $raw['property_id'] ?? '' );
-        $title       = (string) ( $raw['title'] ?? $raw['name'] ?? $raw['headline'] ?? 'Untitled Property' );
-        $type        = (string) ( $raw['property_type'] ?? $raw['type'] ?? $raw['category'] ?? '' );
-        $status      = (string) ( $raw['status'] ?? $raw['state'] ?? 'for_sale' );
-        $price       = isset( $raw['price'] ) ? (float) $raw['price'] : ( isset( $raw['sale_price'] ) ? (float) $raw['sale_price'] : ( isset( $raw['rent_price'] ) ? (float) $raw['rent_price'] : null ) );
-        $freq        = (string) ( $raw['price_frequency'] ?? $raw['frequency'] ?? '' );
+        $external_id = (string) ( $raw['property_id'] ?? $raw['id'] ?? $raw['external_id'] ?? $raw['reference'] ?? '' );
         
-        $city        = (string) ( $raw['city'] ?? $raw['locality'] ?? $raw['municipality'] ?? ( $raw['address']['city'] ?? '' ) );
-        $postal_code = (string) ( $raw['postal_code'] ?? $raw['zip'] ?? $raw['postcode'] ?? ( $raw['address']['postal_code'] ?? '' ) );
-        $address     = (string) ( $raw['address']['street'] ?? ( is_string( $raw['address'] ?? null ) ? $raw['address'] : '' ) );
+        // Multilingual Title Resolution
+        $title = $this->extract_multilingual_string( $raw['title'] ?? $raw['name'] ?? $raw['headline'] ?? null );
         
-        $bedrooms    = (int) ( $raw['bedrooms'] ?? $raw['rooms'] ?? $raw['number_of_bedrooms'] ?? 0 );
-        $bathrooms   = (int) ( $raw['bathrooms'] ?? $raw['number_of_bathrooms'] ?? 0 );
-        $living_area = isset( $raw['living_area'] ) ? (float) $raw['living_area'] : ( isset( $raw['surface'] ) ? (float) $raw['surface'] : ( isset( $raw['area'] ) ? (float) $raw['area'] : null ) );
-        $land_area   = isset( $raw['land_area'] ) ? (float) $raw['land_area'] : ( isset( $raw['plot_surface'] ) ? (float) $raw['plot_surface'] : null );
-        $epc_value   = (string) ( $raw['epc_value'] ?? $raw['epc'] ?? $raw['energy_label'] ?? '' );
-        
-        // Image resolution
-        $featured_image = '';
-        if ( ! empty( $raw['featured_image'] ) ) {
-            $featured_image = is_string( $raw['featured_image'] ) ? $raw['featured_image'] : ( $raw['featured_image']['url'] ?? '' );
-        } elseif ( ! empty( $raw['images'][0] ) ) {
-            $featured_image = is_string( $raw['images'][0] ) ? $raw['images'][0] : ( $raw['images'][0]['url'] ?? '' );
-        } elseif ( ! empty( $raw['photos'][0] ) ) {
-            $featured_image = is_string( $raw['photos'][0] ) ? $raw['photos'][0] : ( $raw['photos'][0]['url'] ?? '' );
+        // Property Type Resolution
+        $type = $this->extract_multilingual_string(
+            $raw['type_label'] ?? $raw['property_type'] ?? $raw['type_name'] ?? $raw['category'] ?? ( $raw['type'] ?? '' )
+        );
+        if ( empty( $type ) && ! empty( $raw['type_id'] ) ) {
+            $type_map = [
+                1 => 'House', 2 => 'Apartment', 3 => 'Villa', 4 => 'Office',
+                5 => 'Commercial', 6 => 'Land', 22 => 'Warehouse'
+            ];
+            $type = $type_map[ (int) $raw['type_id'] ] ?? 'Property';
         }
 
+        // Status & Transaction Type Resolution
+        $status = 'for_sale';
+        $trans_id = (int) ( $raw['transaction_id'] ?? 0 );
+        $status_id = (int) ( $raw['status_id'] ?? 1 );
+
+        if ( $trans_id === 2 || ( isset( $raw['transaction_type'] ) && stripos( $raw['transaction_type'], 'rent' ) !== false ) ) {
+            $status = 'for_rent';
+        } elseif ( $trans_id === 1 || ( isset( $raw['transaction_type'] ) && stripos( $raw['transaction_type'], 'sale' ) !== false ) ) {
+            $status = 'for_sale';
+        }
+
+        if ( $status_id === 2 || ( isset( $raw['status'] ) && stripos( $raw['status'], 'sold' ) !== false ) ) {
+            $status = 'sold';
+        } elseif ( $status_id === 3 || ( isset( $raw['status'] ) && stripos( $raw['status'], 'rented' ) !== false ) ) {
+            $status = 'rented';
+        }
+
+        // Price Resolution
+        $price = null;
+        if ( isset( $raw['price'] ) && is_numeric( $raw['price'] ) ) {
+            $price = (float) $raw['price'];
+        } elseif ( isset( $raw['financials']['price'] ) && is_numeric( $raw['financials']['price'] ) ) {
+            $price = (float) $raw['financials']['price'];
+        } elseif ( isset( $raw['sale_price'] ) && is_numeric( $raw['sale_price'] ) ) {
+            $price = (float) $raw['sale_price'];
+        } elseif ( isset( $raw['rent_price'] ) && is_numeric( $raw['rent_price'] ) ) {
+            $price = (float) $raw['rent_price'];
+        }
+
+        $freq = (string) ( $raw['price_frequency'] ?? $raw['frequency'] ?? ( $status === 'for_rent' ? 'month' : '' ) );
+
+        // Address & City Resolution
+        $city = '';
+        $postal_code = '';
+        $address = '';
+
+        if ( ! empty( $raw['address'] ) && is_array( $raw['address'] ) ) {
+            $addr = $raw['address'];
+            $city = (string) ( $addr['city_geo']['city'] ?? $addr['city_geo']['city_full'] ?? $addr['city'] ?? ( $addr['municipality'] ?? '' ) );
+            $postal_code = (string) ( $addr['city_geo']['zip'] ?? $addr['postal_code'] ?? ( $addr['zip'] ?? '' ) );
+
+            $street = $this->extract_multilingual_string( $addr['street_translated'] ?? $addr['street_lang'] ?? ( $addr['street'] ?? '' ) );
+            $number = (string) ( $addr['number'] ?? '' );
+            $box    = (string) ( $addr['box'] ?? '' );
+            $address = trim( $street . ' ' . $number . ( ! empty( $box ) ? ' / ' . $box : '' ) );
+        }
+
+        if ( empty( $city ) ) {
+            $city = (string) ( $raw['city'] ?? $raw['locality'] ?? $raw['municipality'] ?? '' );
+        }
+        if ( empty( $postal_code ) ) {
+            $postal_code = (string) ( $raw['postal_code'] ?? $raw['zip'] ?? '' );
+        }
+        if ( empty( $address ) && is_string( $raw['address'] ?? null ) ) {
+            $address = (string) $raw['address'];
+        }
+
+        // If title was empty, create a clean descriptive title from Type & Location or Reference
+        if ( empty( $title ) ) {
+            $title = ! empty( $type ) ? $type : __( 'Property', 'zabun-connect' );
+            if ( ! empty( $city ) ) {
+                $title .= ' in ' . $city;
+            } elseif ( ! empty( $raw['reference'] ) ) {
+                $title .= ' (' . $raw['reference'] . ')';
+            }
+        }
+
+        // Rooms & Surface Area
+        $bedrooms = (int) (
+            $raw['bedrooms'] 
+            ?? $raw['rooms']['bedrooms'] 
+            ?? $raw['number_of_bedrooms'] 
+            ?? $raw['nr_bedrooms'] 
+            ?? $raw['nb_bedrooms'] 
+            ?? $raw['slaapkamers'] 
+            ?? $raw['aantal_slaapkamers'] 
+            ?? 0
+        );
+        $bathrooms = (int) (
+            $raw['bathrooms'] 
+            ?? $raw['rooms']['bathrooms'] 
+            ?? $raw['number_of_bathrooms'] 
+            ?? $raw['nr_bathrooms'] 
+            ?? $raw['nb_bathrooms'] 
+            ?? $raw['badkamers'] 
+            ?? $raw['aantal_badkamers'] 
+            ?? 0
+        );
+        
+        $living_area = null;
+        if ( isset( $raw['living_area'] ) && is_numeric( $raw['living_area'] ) ) {
+            $living_area = (float) $raw['living_area'];
+        } elseif ( isset( $raw['surface_habitable'] ) && is_numeric( $raw['surface_habitable'] ) ) {
+            $living_area = (float) $raw['surface_habitable'];
+        } elseif ( isset( $raw['area_build'] ) && is_numeric( $raw['area_build'] ) && (float) $raw['area_build'] > 0 ) {
+            $living_area = (float) $raw['area_build'];
+        } elseif ( isset( $raw['surface'] ) && is_numeric( $raw['surface'] ) ) {
+            $living_area = (float) $raw['surface'];
+        }
+
+        $land_area = null;
+        if ( isset( $raw['area_ground'] ) && is_numeric( $raw['area_ground'] ) ) {
+            $land_area = (float) $raw['area_ground'];
+        } elseif ( isset( $raw['land_area'] ) && is_numeric( $raw['land_area'] ) ) {
+            $land_area = (float) $raw['land_area'];
+        } elseif ( isset( $raw['surface_terrain'] ) && is_numeric( $raw['surface_terrain'] ) ) {
+            $land_area = (float) $raw['surface_terrain'];
+        }
+
+        // EPC Value
+        $epc_value = (string) ( $raw['custom_epc_label'] ?? $raw['epc_value'] ?? $raw['epc'] ?? $raw['energy_label'] ?? '' );
+        if ( empty( $epc_value ) && ! empty( $raw['epc_value_total'] ) ) {
+            $epc_value = $raw['epc_value_total'] . ' kWh/m²';
+        }
+
+        // Images & Gallery Resolution
+        $featured_image = '';
         $gallery = [];
-        $raw_images = $raw['images'] ?? $raw['photos'] ?? $raw['gallery'] ?? [];
-        if ( is_array( $raw_images ) ) {
-            foreach ( $raw_images as $img ) {
-                if ( is_string( $img ) && ! empty( $img ) ) {
-                    $gallery[] = $img;
-                } elseif ( is_array( $img ) && ! empty( $img['url'] ) ) {
-                    $gallery[] = $img['url'];
+
+        if ( ! empty( $raw['photo_url'] ) && is_string( $raw['photo_url'] ) ) {
+            $featured_image = $raw['photo_url'];
+            $gallery[]      = $raw['photo_url'];
+        }
+
+        $raw_media = $raw['pictures'] ?? $raw['images'] ?? $raw['photos'] ?? $raw['media'] ?? [];
+        if ( is_array( $raw_media ) ) {
+            foreach ( $raw_media as $m ) {
+                $img_url = '';
+                if ( is_string( $m ) ) {
+                    $img_url = $m;
+                } elseif ( is_array( $m ) ) {
+                    $img_url = (string) ( $m['url'] ?? $m['media_url'] ?? $m['photo_url'] ?? ( $m['file_url'] ?? '' ) );
+                }
+
+                if ( ! empty( $img_url ) ) {
+                    if ( ! in_array( $img_url, $gallery, true ) ) {
+                        $gallery[] = $img_url;
+                    }
+                    if ( empty( $featured_image ) ) {
+                        $featured_image = $img_url;
+                    }
                 }
             }
         }

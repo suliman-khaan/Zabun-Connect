@@ -59,25 +59,155 @@
             }
         });
 
-        // 4. Reset Filters Link
-        $(document).on('click', '.zabun-link-reset', function(e) {
+        // -------------------------------------------------------------
+        // 4. Reset & Clear Search Filters
+        // -------------------------------------------------------------
+        $(document).on('click', '.zabun-btn-clear, .zabun-link-reset', function(e) {
+            e.preventDefault();
             var $form = $(this).closest('form');
-            setTimeout(function() {
-                // Reset tab to first tab or all
-                var $statusTabs = $form.find('.zabun-status-tabs');
-                $statusTabs.find('button').removeClass('active');
-                $statusTabs.find('button:first-child').addClass('active');
-                $form.find('input[name="zabun_status"]').val($statusTabs.find('button:first-child').data('status') || '');
+            var actionUrl = $form.attr('action') || window.location.pathname;
 
-                // Reset button groups to 'Any'
-                $form.find('.zabun-btngroup').each(function() {
-                    var $g = $(this);
-                    $g.find('button').removeClass('active');
-                    $g.find('button[data-val=""], button:first-child').addClass('active');
-                    var groupName = $g.data('group');
-                    $form.find('input[name="zabun_' + groupName + '"]').val('');
+            // Clear text and numeric inputs
+            $form.find('input[type="text"], input[type="number"]').val('');
+            
+            // Reset dropdown selects
+            $form.find('select').each(function() {
+                $(this).prop('selectedIndex', 0).val('');
+            });
+
+            // Reset tab to first tab
+            var $statusTabs = $form.find('.zabun-status-tabs');
+            $statusTabs.find('button').removeClass('active');
+            var $firstTab = $statusTabs.find('button:first-child');
+            $firstTab.addClass('active');
+            $form.find('input[name="zabun_status"]').val($firstTab.data('status') || 'for_sale');
+
+            // Reset button groups to 'Any'
+            $form.find('.zabun-btngroup').each(function() {
+                var $g = $(this);
+                $g.find('button').removeClass('active');
+                $g.find('button[data-val=""], button:first-child').addClass('active');
+                var groupName = $g.data('group');
+                $form.find('input[name="zabun_' + groupName + '"]').val('');
+            });
+
+            // If URL already has active search parameters, reload clean page to immediately refresh results
+            if (window.location.search && window.location.search.indexOf('zabun_') !== -1) {
+                window.location.href = actionUrl;
+            }
+        });
+
+        // -------------------------------------------------------------
+        // 5. Fullscreen Photo Lightbox Modal
+        // -------------------------------------------------------------
+        var activeGalleryImages = [];
+        var currentLightboxIndex = 0;
+
+        function openLightbox(images, startIndex) {
+            if (!images || !images.length) return;
+            activeGalleryImages = images;
+            currentLightboxIndex = startIndex >= 0 && startIndex < images.length ? startIndex : 0;
+            updateLightbox();
+            $('#zabun-lightbox').fadeIn(200).attr('aria-hidden', 'false');
+            $('body').addClass('zabun-lightbox-open');
+        }
+
+        function closeLightbox() {
+            $('#zabun-lightbox').fadeOut(200).attr('aria-hidden', 'true');
+            $('body').removeClass('zabun-lightbox-open');
+        }
+
+        function updateLightbox() {
+            var total = activeGalleryImages.length;
+            if (!total) return;
+            var src = activeGalleryImages[currentLightboxIndex];
+            $('#zabun-lightbox .zabun-lightbox-img').attr('src', src);
+            $('#zabun-lightbox .curr-index').text(currentLightboxIndex + 1);
+            $('#zabun-lightbox .total-count').text(total);
+
+            // Highlight active thumbnail
+            $('#zabun-lightbox .zabun-thumb').removeClass('active');
+            var $activeThumb = $('#zabun-lightbox .zabun-thumb[data-index="' + currentLightboxIndex + '"]');
+            $activeThumb.addClass('active');
+
+            // Scroll thumbnail into view
+            if ($activeThumb.length) {
+                var $container = $('#zabun-lightbox .zabun-lightbox-thumbs');
+                if ($container.length && $container[0].scrollWidth > $container.innerWidth()) {
+                    var scrollLeft = $activeThumb.position().left + $container.scrollLeft() - ($container.width() / 2) + ($activeThumb.outerWidth() / 2);
+                    $container.animate({ scrollLeft: scrollLeft }, 150);
+                }
+            }
+        }
+
+        // Open Lightbox on Gallery Image, Overlay, or Count Badge click
+        $(document).on('click', '.zabun-detail-gallery img, .zabun-detail-gallery .gallery-more-overlay, .zabun-detail-gallery .photo-count-badge', function(e) {
+            e.preventDefault();
+            var $gallery = $(this).closest('.zabun-detail-gallery');
+            var rawData = $gallery.attr('data-images');
+            var images = [];
+            try {
+                images = JSON.parse(rawData);
+            } catch (err) {
+                images = [];
+            }
+            if (!images || !images.length) {
+                $gallery.find('img').each(function() {
+                    var s = $(this).attr('src');
+                    if (s && images.indexOf(s) === -1) {
+                        images.push(s);
+                    }
                 });
-            }, 50);
+            }
+            var clickedIndex = parseInt($(this).attr('data-index'), 10);
+            if (isNaN(clickedIndex)) {
+                clickedIndex = 0;
+            }
+            openLightbox(images, clickedIndex);
+        });
+
+        // Close Lightbox
+        $(document).on('click', '.zabun-lightbox-close, .zabun-lightbox-overlay', function(e) {
+            e.preventDefault();
+            closeLightbox();
+        });
+
+        // Next / Prev navigation
+        $(document).on('click', '.zabun-lightbox-next', function(e) {
+            e.preventDefault();
+            if (activeGalleryImages.length <= 1) return;
+            currentLightboxIndex = (currentLightboxIndex + 1) % activeGalleryImages.length;
+            updateLightbox();
+        });
+
+        $(document).on('click', '.zabun-lightbox-prev', function(e) {
+            e.preventDefault();
+            if (activeGalleryImages.length <= 1) return;
+            currentLightboxIndex = (currentLightboxIndex - 1 + activeGalleryImages.length) % activeGalleryImages.length;
+            updateLightbox();
+        });
+
+        // Thumbnail Click in Lightbox
+        $(document).on('click', '.zabun-lightbox-thumbs .zabun-thumb', function(e) {
+            e.preventDefault();
+            var idx = parseInt($(this).attr('data-index'), 10);
+            if (!isNaN(idx)) {
+                currentLightboxIndex = idx;
+                updateLightbox();
+            }
+        });
+
+        // Keyboard navigation (Esc, Left, Right)
+        $(document).on('keydown', function(e) {
+            if ($('#zabun-lightbox').is(':visible')) {
+                if (e.key === 'Escape' || e.keyCode === 27) {
+                    closeLightbox();
+                } else if (e.key === 'ArrowRight' || e.keyCode === 39) {
+                    $('.zabun-lightbox-next').trigger('click');
+                } else if (e.key === 'ArrowLeft' || e.keyCode === 37) {
+                    $('.zabun-lightbox-prev').trigger('click');
+                }
+            }
         });
     });
 })(jQuery);
