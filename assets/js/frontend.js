@@ -60,9 +60,9 @@
         });
 
         // -------------------------------------------------------------
-        // 4. Reset & Clear Search Filters
+        // 4. Reset Search Filters
         // -------------------------------------------------------------
-        $(document).on('click', '.zabun-btn-clear, .zabun-link-reset', function(e) {
+        $(document).on('click', '.zabun-link-reset', function(e) {
             e.preventDefault();
             var $form = $(this).closest('form');
             var actionUrl = $form.attr('action') || window.location.pathname;

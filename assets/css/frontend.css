@@ -1198,40 +1198,6 @@ h2.zabun-section-heading {
     transform: rotate(180deg);
 }
 
-.zabun-btn-clear {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 0 16px;
-    background: transparent;
-    color: var(--zabun-text-soft);
-    border: none;
-    border-left: 1px solid var(--zabun-border);
-    font-size: 12.5px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background .15s ease, color .15s ease;
-    height: 100%;
-    min-height: 52px;
-}
-
-.zabun-btn-clear:hover {
-    color: var(--zabun-rust);
-    background: var(--zabun-mist);
-}
-
-.zabun-btn-clear svg {
-    color: var(--zabun-text-soft);
-    transition: transform .2s ease, color .2s ease;
-}
-
-.zabun-btn-clear:hover svg {
-    color: var(--zabun-rust);
-    transform: rotate(90deg);
-}
-
 @media (max-width: 940px) {
     .zabun-hero-row {
         grid-template-columns: 1fr 1fr;

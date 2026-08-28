@@ -810,10 +810,6 @@ class ShortcodesHandler {
                             <span><?php esc_html_e( 'More filters', 'zabun-connect' ); ?></span>
                             <svg width="11" height="7" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
-                        <button class="zabun-btn-clear" type="button" title="<?php esc_attr_e( 'Clear all filters', 'zabun-connect' ); ?>" aria-label="<?php esc_attr_e( 'Clear all filters', 'zabun-connect' ); ?>">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                            <span><?php esc_html_e( 'Clear', 'zabun-connect' ); ?></span>
-                        </button>
                         <button class="zabun-btn-search" type="submit">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                             <span><?php esc_html_e( 'Search', 'zabun-connect' ); ?></span>
