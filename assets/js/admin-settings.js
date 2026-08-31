@@ -92,7 +92,8 @@
                         
                         // Update status card counters dynamically if available
                         if (response.data.stats) {
-                            $('#zabun-cached-count').text(response.data.stats.total_fetched);
+                            var cachedCount = response.data.stats.total_cached !== undefined ? response.data.stats.total_cached : response.data.stats.total_fetched;
+                            $('#zabun-cached-count').text(cachedCount);
                         }
                         $('#zabun-last-sync').text(zabunConnectAdmin.i18n.justNow);
                     } else {

@@ -84,8 +84,10 @@ class SyncListings {
             wp_raise_memory_limit( 'admin' );
         }
 
-        $table_name = Schema::get_table_name();
-        $stats      = [
+        $table_name      = Schema::get_table_name();
+        $sync_start_time = current_time( 'mysql' );
+        $synced_ids      = [];
+        $stats           = [
             'total_fetched' => 0,
             'inserted'      => 0,
             'updated'       => 0,
@@ -129,7 +131,7 @@ class SyncListings {
                 $batch_count = count( $batch );
                 $stats['total_fetched'] += $batch_count;
 
-                $this->process_items_batch( $batch, $client, $table_name, $stats );
+                $this->process_items_batch( $batch, $client, $table_name, $stats, $synced_ids );
 
                 $page++;
 
@@ -145,10 +147,29 @@ class SyncListings {
             } while ( true );
         }
 
+        // Clean up any stale records not present in this active sync feed
+        if ( ! empty( $synced_ids ) ) {
+            $existing_ids = (array) $wpdb->get_col( "SELECT external_id FROM {$table_name}" );
+            $to_delete    = array_diff( $existing_ids, $synced_ids );
+            if ( ! empty( $to_delete ) ) {
+                $chunks = array_chunk( $to_delete, 100 );
+                foreach ( $chunks as $chunk ) {
+                    $placeholders = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
+                    $wpdb->query(
+                        $wpdb->prepare(
+                            "DELETE FROM {$table_name} WHERE external_id IN ($placeholders)",
+                            $chunk
+                        )
+                    );
+                }
+            }
+        }
+
         update_option( 'zabun_connect_last_sync', current_time( 'mysql' ) );
 
         $total_cached = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
         update_option( 'zabun_connect_cached_count', $total_cached );
+        $stats['total_cached'] = $total_cached;
 
         return $stats;
     }
@@ -160,8 +181,9 @@ class SyncListings {
      * @param ZabunClient|null $client
      * @param string $table_name
      * @param array &$stats
+     * @param array &$synced_ids
      */
-    private function process_items_batch( array $batch, ?ZabunClient $client, string $table_name, array &$stats ): void {
+    private function process_items_batch( array $batch, ?ZabunClient $client, string $table_name, array &$stats, array &$synced_ids = [] ): void {
         global $wpdb;
 
         foreach ( $batch as $raw_item ) {
@@ -174,6 +196,8 @@ class SyncListings {
                 $stats['failed']++;
                 continue;
             }
+
+            $synced_ids[] = (string) $mapped['external_id'];
 
             $existing_id = $wpdb->get_var(
                 $wpdb->prepare(
@@ -407,6 +431,7 @@ class SyncListings {
             'featured_image' => esc_url_raw( $featured_image ),
             'gallery_images' => wp_json_encode( $gallery ),
             'raw_data'       => wp_json_encode( $raw ),
+            'updated_at'     => current_time( 'mysql' ),
         ];
     }
 }
