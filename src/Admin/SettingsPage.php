@@ -297,7 +297,7 @@ class SettingsPage
             [
                 'type' => 'string',
                 'sanitize_callback' => [$this, 'sanitize_sync_source'],
-                'default' => 'media_sync',
+                'default' => 'all',
             ]
         );
 
