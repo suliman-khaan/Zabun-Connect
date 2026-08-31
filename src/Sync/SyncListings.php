@@ -5,6 +5,7 @@ namespace ZabunConnect\Sync;
 use ZabunConnect\Api\ZabunClient;
 use ZabunConnect\Api\ZabunException;
 use ZabunConnect\Database\Schema;
+use ZabunConnect\I18n\I18n;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -69,7 +70,7 @@ class SyncListings {
     }
 
     /**
-     * Execute sync process.
+     * Execute sync process across all pages from Zabun API.
      *
      * @param array|null $items Optional raw items to import (used for testing/direct payload).
      * @return array Sync statistics.
@@ -78,43 +79,94 @@ class SyncListings {
     public function sync( ?array $items = null ): array {
         global $wpdb;
 
-        $client = null;
-        if ( null === $items ) {
-            $client = new ZabunClient();
-            $response = $client->fetch_listings();
-            
-            // Zabun API returns either array directly or envelope with data/items
-            $items = isset( $response['data'] ) 
-                ? (array) $response['data'] 
-                : ( isset( $response['items'] ) ? (array) $response['items'] : ( isset( $response['properties'] ) ? (array) $response['properties'] : (array) $response ) );
+        @set_time_limit( 300 );
+        if ( function_exists( 'wp_raise_memory_limit' ) ) {
+            wp_raise_memory_limit( 'admin' );
         }
 
         $table_name = Schema::get_table_name();
         $stats      = [
-            'total_fetched' => count( $items ),
+            'total_fetched' => 0,
             'inserted'      => 0,
             'updated'       => 0,
             'failed'        => 0,
         ];
 
-        foreach ( $items as $raw_item ) {
+        // If items are passed directly, process that array without API pagination
+        if ( null !== $items ) {
+            $stats['total_fetched'] = count( $items );
+            $this->process_items_batch( $items, null, $table_name, $stats );
+        } else {
+            $client          = new ZabunClient();
+            $page            = 0;
+            $limit           = 100;
+            $total_api_count = null;
+
+            do {
+                $response = $client->fetch_listings( [
+                    'page'  => $page,
+                    'limit' => $limit,
+                ] );
+
+                if ( null === $total_api_count ) {
+                    if ( isset( $response['count'] ) && is_numeric( $response['count'] ) ) {
+                        $total_api_count = (int) $response['count'];
+                    } elseif ( isset( $response['total'] ) && is_numeric( $response['total'] ) ) {
+                        $total_api_count = (int) $response['total'];
+                    } elseif ( isset( $response['paging']['total'] ) && is_numeric( $response['paging']['total'] ) ) {
+                        $total_api_count = (int) $response['paging']['total'];
+                    }
+                }
+
+                $batch = isset( $response['data'] ) 
+                    ? (array) $response['data'] 
+                    : ( isset( $response['items'] ) ? (array) $response['items'] : ( isset( $response['properties'] ) ? (array) $response['properties'] : (array) $response ) );
+
+                if ( empty( $batch ) ) {
+                    break;
+                }
+
+                $batch_count = count( $batch );
+                $stats['total_fetched'] += $batch_count;
+
+                $this->process_items_batch( $batch, $client, $table_name, $stats );
+
+                $page++;
+
+                // Stop if batch was smaller than limit or we have reached the total API count
+                if ( $batch_count < $limit || ( null !== $total_api_count && $stats['total_fetched'] >= $total_api_count ) ) {
+                    break;
+                }
+
+                // Safeguard against infinite loops (max 50 pages = 5,000 listings)
+                if ( $page >= 50 ) {
+                    break;
+                }
+            } while ( true );
+        }
+
+        update_option( 'zabun_connect_last_sync', current_time( 'mysql' ) );
+
+        $total_cached = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
+        update_option( 'zabun_connect_cached_count', $total_cached );
+
+        return $stats;
+    }
+
+    /**
+     * Process and upsert a batch of items into the database.
+     *
+     * @param array $batch
+     * @param ZabunClient|null $client
+     * @param string $table_name
+     * @param array &$stats
+     */
+    private function process_items_batch( array $batch, ?ZabunClient $client, string $table_name, array &$stats ): void {
+        global $wpdb;
+
+        foreach ( $batch as $raw_item ) {
             if ( ! is_array( $raw_item ) ) {
                 continue;
-            }
-
-            $property_id = (string) ( $raw_item['property_id'] ?? $raw_item['id'] ?? $raw_item['external_id'] ?? '' );
-            
-            // If we have a Zabun client and property ID, fetch the full extended object to ensure 100% complete data
-            if ( $client && ! empty( $property_id ) && ( empty( $raw_item['title'] ) || ! isset( $raw_item['description'] ) ) ) {
-                try {
-                    $detailed = $client->fetch_listing( $property_id );
-                    if ( is_array( $detailed ) && ! empty( $detailed ) ) {
-                        // Merge detailed data with base item
-                        $raw_item = array_merge( $raw_item, $detailed );
-                    }
-                } catch ( \Throwable $e ) {
-                    // Fallback to base raw_item if detail fetch fails
-                }
             }
 
             $mapped = $this->map_item( $raw_item );
@@ -155,13 +207,6 @@ class SyncListings {
                 }
             }
         }
-
-        update_option( 'zabun_connect_last_sync', current_time( 'mysql' ) );
-
-        $total_cached = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
-        update_option( 'zabun_connect_cached_count', $total_cached );
-
-        return $stats;
     }
 
     /**
@@ -172,33 +217,7 @@ class SyncListings {
      * @return string
      */
     public function extract_multilingual_string( $val, string $default = '' ): string {
-        if ( is_string( $val ) ) {
-            return trim( $val );
-        }
-
-        if ( is_array( $val ) ) {
-            // Check current site locale preference
-            $locale = function_exists( 'get_locale' ) ? strtolower( substr( get_locale(), 0, 2 ) ) : 'nl';
-            if ( ! empty( $val[ $locale ] ) && is_string( $val[ $locale ] ) ) {
-                return trim( $val[ $locale ] );
-            }
-
-            // Fallback order: nl -> en -> fr -> de -> any non-empty value
-            $preference = [ 'nl', 'en', 'fr', 'de' ];
-            foreach ( $preference as $lang ) {
-                if ( ! empty( $val[ $lang ] ) && is_string( $val[ $lang ] ) ) {
-                    return trim( $val[ $lang ] );
-                }
-            }
-
-            foreach ( $val as $k => $v ) {
-                if ( is_string( $v ) && ! empty( trim( $v ) ) ) {
-                    return trim( $v );
-                }
-            }
-        }
-
-        return $default;
+        return I18n::extract( $val, null, $default );
     }
 
     /**

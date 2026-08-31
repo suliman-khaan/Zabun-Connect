@@ -3,6 +3,7 @@
 namespace ZabunConnect\Cache;
 
 use ZabunConnect\Database\Schema;
+use ZabunConnect\I18n\I18n;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -331,6 +332,42 @@ class ListingsRepository {
         if ( ! empty( $row['raw_data'] ) ) {
             $decoded = json_decode( $row['raw_data'], true );
             $raw_data = is_array( $decoded ) ? $decoded : [];
+        }
+
+        // Dynamically resolve multilingual fields from raw_data if available
+        if ( ! empty( $raw_data ) ) {
+            $curr_lang = I18n::get_current_language();
+
+            // Dynamic title
+            if ( ! empty( $raw_data['title'] ) || ! empty( $raw_data['name'] ) || ! empty( $raw_data['headline'] ) ) {
+                $dyn_title = I18n::extract( $raw_data['title'] ?? $raw_data['name'] ?? $raw_data['headline'], $curr_lang );
+                if ( ! empty( $dyn_title ) ) {
+                    $row['title'] = $dyn_title;
+                }
+            }
+
+            // Dynamic property type
+            $dyn_type = I18n::extract(
+                $raw_data['type_label'] ?? $raw_data['property_type'] ?? $raw_data['type_name'] ?? $raw_data['category'] ?? ( $raw_data['type'] ?? '' ),
+                $curr_lang
+            );
+            if ( ! empty( $dyn_type ) ) {
+                $row['property_type'] = I18n::trans_type( $dyn_type, $curr_lang );
+            } elseif ( ! empty( $raw_data['type_id'] ) ) {
+                $row['property_type'] = I18n::trans_type( $raw_data['type_id'], $curr_lang );
+            }
+
+            // Dynamic street / address
+            if ( ! empty( $raw_data['address'] ) && is_array( $raw_data['address'] ) ) {
+                $addr       = $raw_data['address'];
+                $dyn_street = I18n::extract( $addr['street_translated'] ?? $addr['street_lang'] ?? ( $addr['street'] ?? '' ), $curr_lang );
+                $number     = (string) ( $addr['number'] ?? '' );
+                $box        = (string) ( $addr['box'] ?? '' );
+                $dyn_addr   = trim( $dyn_street . ' ' . $number . ( ! empty( $box ) ? ' / ' . $box : '' ) );
+                if ( ! empty( $dyn_addr ) ) {
+                    $row['address'] = $dyn_addr;
+                }
+            }
         }
 
         $row['gallery_images'] = $gallery;

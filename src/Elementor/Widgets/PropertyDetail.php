@@ -140,9 +140,10 @@ class PropertyDetail extends Widget_Base {
         $this->add_control(
             'agent_role',
             [
-                'label'   => __( 'Agent Role / Subtitle', 'zabun-connect' ),
-                'type'    => Controls_Manager::TEXT,
-                'default' => __( 'Listing agent', 'zabun-connect' ),
+                'label'       => __( 'Agent Role / Subtitle', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => __( 'Leave empty for localized "Listing agent"', 'zabun-connect' ),
+                'default'     => '',
             ]
         );
 
@@ -167,9 +168,10 @@ class PropertyDetail extends Widget_Base {
         $this->add_control(
             'inquiry_btn_text',
             [
-                'label'   => __( 'Primary Button Text', 'zabun-connect' ),
-                'type'    => Controls_Manager::TEXT,
-                'default' => __( 'Request a viewing', 'zabun-connect' ),
+                'label'       => __( 'Primary Button Text', 'zabun-connect' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => __( 'Leave empty for localized "Request a viewing"', 'zabun-connect' ),
+                'default'     => '',
             ]
         );
 
@@ -714,12 +716,15 @@ class PropertyDetail extends Widget_Base {
     protected function render(): void {
         $settings = $this->get_settings_for_display();
 
+        $raw_role = ! empty( $settings['agent_role'] ) ? trim( $settings['agent_role'] ) : '';
+        $raw_btn  = ! empty( $settings['inquiry_btn_text'] ) ? trim( $settings['inquiry_btn_text'] ) : '';
+
         $custom_options = [
             'agent_name'        => ! empty( $settings['agent_name'] ) ? $settings['agent_name'] : null,
-            'agent_role'        => ! empty( $settings['agent_role'] ) ? $settings['agent_role'] : null,
+            'agent_role'        => ( ! empty( $raw_role ) && strcasecmp( $raw_role, 'Listing agent' ) !== 0 && strcasecmp( $raw_role, 'Listing Agent' ) !== 0 ) ? $raw_role : null,
             'agent_phone'       => ! empty( $settings['agent_phone'] ) ? $settings['agent_phone'] : null,
             'agent_email'       => ! empty( $settings['agent_email'] ) ? $settings['agent_email'] : null,
-            'inquiry_btn_text'  => ! empty( $settings['inquiry_btn_text'] ) ? $settings['inquiry_btn_text'] : null,
+            'inquiry_btn_text'  => ( ! empty( $raw_btn ) && strcasecmp( $raw_btn, 'Request a viewing' ) !== 0 ) ? $raw_btn : null,
             'inquiry_url'       => ! empty( $settings['inquiry_url'] ) ? $settings['inquiry_url'] : null,
             'show_brochure_btn' => ( $settings['show_brochure_btn'] ?? 'yes' ) === 'yes',
         ];

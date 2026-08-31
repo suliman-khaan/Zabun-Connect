@@ -1622,3 +1622,143 @@ h2.zabun-section-heading {
     color: var(--zabun-primary);
     font-weight: 600;
 }
+
+/* ==========================================================================
+   Pagination & Direct Page Jump
+   ========================================================================== */
+.zabun-pagination-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--zabun-border);
+}
+
+.zabun-pagination-info {
+    font-size: 13.5px;
+    color: var(--zabun-text-soft);
+    font-weight: 500;
+}
+
+.zabun-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.zabun-pagination .page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--zabun-text);
+    background: #ffffff;
+    border: 1px solid var(--zabun-border);
+    border-radius: 3px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.zabun-pagination .page-numbers:hover {
+    border-color: var(--zabun-primary);
+    color: var(--zabun-primary);
+    background: var(--zabun-mist);
+}
+
+.zabun-pagination .page-numbers.current {
+    background: var(--zabun-primary);
+    color: #ffffff;
+    border-color: var(--zabun-primary);
+}
+
+.zabun-pagination .page-numbers.dots {
+    border: none;
+    background: transparent;
+    min-width: 24px;
+    color: var(--zabun-text-soft);
+}
+
+.zabun-page-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--zabun-border);
+    border-radius: 3px;
+    padding: 3px 6px 3px 12px;
+    font-size: 13px;
+    color: var(--zabun-text-soft);
+}
+
+.zabun-page-jump-label,
+.zabun-page-jump-total {
+    font-size: 13px;
+    color: var(--zabun-text-soft);
+    white-space: nowrap;
+}
+
+.zabun-page-jump-input {
+    width: 58px;
+    height: 32px;
+    text-align: center;
+    border: 1px solid var(--zabun-border) !important;
+    border-radius: 2px;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--zabun-text);
+    background: var(--zabun-paper);
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.zabun-page-jump-input::-webkit-outer-spin-button,
+.zabun-page-jump-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.zabun-page-jump-input:focus {
+    border-color: var(--zabun-primary) !important;
+    background: #ffffff;
+}
+
+.zabun-page-jump-btn {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #ffffff;
+    background: var(--zabun-primary);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.15s ease;
+    white-space: nowrap;
+}
+
+.zabun-page-jump-btn:hover {
+    background: var(--zabun-secondary, var(--zabun-brass));
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .zabun-pagination-wrap {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .zabun-pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+

@@ -3,6 +3,7 @@
 namespace ZabunConnect\Shortcodes;
 
 use ZabunConnect\Cache\ListingsRepository;
+use ZabunConnect\I18n\I18n;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -158,7 +159,7 @@ class ShortcodesHandler {
         <div class="zabun-grid-container">
             <?php if ( empty( $listings ) ) : ?>
                 <div class="zabun-empty-state">
-                    <p><?php esc_html_e( 'No property listings found matching your criteria.', 'zabun-connect' ); ?></p>
+                    <p><?php echo esc_html( I18n::trans( 'no_properties_found' ) ); ?></p>
                 </div>
             <?php else : ?>
                 <div class="zabun-grid <?php echo esc_attr( $columns_cls ); ?>">
@@ -175,7 +176,7 @@ class ShortcodesHandler {
                     ?>
                     <div class="zabun-pagination-wrap">
                         <div class="zabun-pagination-info">
-                            <?php echo sprintf( esc_html__( 'Showing %1$s–%2$s of %3$s listings', 'zabun-connect' ), number_format_i18n( $from_num ), number_format_i18n( $to_num ), number_format_i18n( $total_items ) ); ?>
+                            <?php echo sprintf( esc_html( I18n::trans( 'showing_listings_count' ) ), number_format_i18n( $from_num ), number_format_i18n( $to_num ), number_format_i18n( $total_items ) ); ?>
                         </div>
                         <?php if ( $total_pages > 1 ) : ?>
                             <div class="zabun-pagination">
@@ -192,6 +193,22 @@ class ShortcodesHandler {
                                 ] );
                                 ?>
                             </div>
+
+                            <!-- Direct Page Jump -->
+                            <form class="zabun-page-jump" method="get" action="<?php echo esc_url( remove_query_arg( 'zabun_page' ) ); ?>">
+                                <?php
+                                foreach ( $_GET as $g_key => $g_val ) {
+                                    if ( $g_key === 'zabun_page' || is_array( $g_val ) ) {
+                                        continue;
+                                    }
+                                    echo '<input type="hidden" name="' . esc_attr( $g_key ) . '" value="' . esc_attr( $g_val ) . '" />';
+                                }
+                                ?>
+                                <span class="zabun-page-jump-label"><?php echo esc_html( I18n::trans( 'page' ) ); ?></span>
+                                <input type="number" name="zabun_page" min="1" max="<?php echo esc_attr( $total_pages ); ?>" value="<?php echo esc_attr( $current_page ); ?>" class="zabun-page-jump-input" aria-label="<?php echo esc_attr( I18n::trans( 'go_to_page' ) ); ?>" />
+                                <span class="zabun-page-jump-total"><?php echo esc_html( I18n::trans( 'of' ) ); ?> <?php echo esc_html( number_format_i18n( $total_pages ) ); ?></span>
+                                <button type="submit" class="zabun-page-jump-btn"><?php echo esc_html( I18n::trans( 'go' ) ); ?></button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -214,8 +231,8 @@ class ShortcodesHandler {
             ? add_query_arg( 'property_id', $item['external_id'], $detail_url_base ) 
             : add_query_arg( 'property_id', $item['external_id'] );
 
-        $raw_status = strtolower( trim( $item['status'] ?? 'for_sale' ) );
-        $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
+        $raw_status   = strtolower( trim( $item['status'] ?? 'for_sale' ) );
+        $status_label = I18n::trans_status( $raw_status );
         $status_class = 'status-' . sanitize_html_class( $raw_status );
         
         $currency = (string) get_option( 'zabun_connect_currency_symbol', '€' );
@@ -225,9 +242,16 @@ class ShortcodesHandler {
 
         $price_formatted = ! empty( $item['price'] ) 
             ? $currency . ' ' . number_format( (float) $item['price'], 0, ',', '.' ) 
-            : __( 'Price on request', 'zabun-connect' );
+            : I18n::trans( 'price_on_request' );
 
-        $freq = ! empty( $item['price_frequency'] ) ? ' / ' . esc_html( $item['price_frequency'] ) : '';
+        $freq_raw = ! empty( $item['price_frequency'] ) ? strtolower( trim( $item['price_frequency'] ) ) : '';
+        $freq_label = $freq_raw;
+        if ( $freq_raw === 'month' || $freq_raw === 'm' || $freq_raw === 'maand' || $freq_raw === 'mois' ) {
+            $freq_label = I18n::trans( 'unit_month' );
+        } elseif ( $freq_raw === 'year' || $freq_raw === 'y' || $freq_raw === 'jaar' || $freq_raw === 'an' ) {
+            $freq_label = I18n::trans( 'unit_year' );
+        }
+        $freq = ! empty( $freq_label ) ? ' / ' . esc_html( $freq_label ) : '';
 
         // Default SVG Icons
         $icon_pin   = $custom_icons['pin'] ?? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s7-7.58 7-13a7 7 0 0 0-14 0c0 5.42 7 13 7 13Z"/><circle cx="12" cy="9" r="2.4"/></svg>';
@@ -248,7 +272,7 @@ class ShortcodesHandler {
                     </a>
                 <?php else : ?>
                     <div class="zabun-placeholder-img">
-                        <span><?php esc_html_e( 'No Image Available', 'zabun-connect' ); ?></span>
+                        <span><?php echo esc_html( I18n::trans( 'no_image_available' ) ); ?></span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -271,12 +295,12 @@ class ShortcodesHandler {
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_beds; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
                         <span class="num"><?php echo ! empty( $item['bedrooms'] ) && (int) $item['bedrooms'] > 0 ? (int) $item['bedrooms'] : '-'; ?></span>
-                        <span class="label"><?php esc_html_e( 'Beds', 'zabun-connect' ); ?></span>
+                        <span class="label"><?php echo esc_html( I18n::trans( 'beds' ) ); ?></span>
                     </div>
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_baths; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
                         <span class="num"><?php echo ! empty( $item['bathrooms'] ) && (int) $item['bathrooms'] > 0 ? (int) $item['bathrooms'] : '-'; ?></span>
-                        <span class="label"><?php esc_html_e( 'Baths', 'zabun-connect' ); ?></span>
+                        <span class="label"><?php echo esc_html( I18n::trans( 'baths' ) ); ?></span>
                     </div>
                     <div class="zabun-card-fact-item">
                         <span class="zabun-icon-wrap"><?php echo $icon_area; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -286,7 +310,7 @@ class ShortcodesHandler {
                                 : ( ! empty( $item['land_area'] ) && (float) $item['land_area'] > 0 ? round( (float) $item['land_area'] ) : '-' );
                             echo esc_html( $area_val ); 
                         ?></span>
-                        <span class="label"><?php esc_html_e( 'm²', 'zabun-connect' ); ?></span>
+                        <span class="label"><?php echo esc_html( I18n::trans( 'unit_sqm' ) ); ?></span>
                     </div>
                 </div>
             </div>
@@ -303,31 +327,7 @@ class ShortcodesHandler {
      * @return string
      */
     public function extract_multilingual_string( $val, string $default = '' ): string {
-        if ( is_string( $val ) ) {
-            return trim( $val );
-        }
-
-        if ( is_array( $val ) ) {
-            $locale = function_exists( 'get_locale' ) ? strtolower( substr( get_locale(), 0, 2 ) ) : 'nl';
-            if ( ! empty( $val[ $locale ] ) && is_string( $val[ $locale ] ) ) {
-                return trim( $val[ $locale ] );
-            }
-
-            $preference = [ 'nl', 'en', 'fr', 'de' ];
-            foreach ( $preference as $lang ) {
-                if ( ! empty( $val[ $lang ] ) && is_string( $val[ $lang ] ) ) {
-                    return trim( $val[ $lang ] );
-                }
-            }
-
-            foreach ( $val as $k => $v ) {
-                if ( is_string( $v ) && ! empty( trim( $v ) ) ) {
-                    return trim( $v );
-                }
-            }
-        }
-
-        return $default;
+        return I18n::extract( $val, null, $default );
     }
 
     /**
@@ -382,7 +382,7 @@ class ShortcodesHandler {
         }
 
         if ( ! $property ) {
-            return '<div class="zabun-empty-state"><p>' . esc_html__( 'Property not found or invalid ID specified.', 'zabun-connect' ) . '</p></div>';
+            return '<div class="zabun-empty-state"><p>' . esc_html( I18n::trans( 'property_not_found' ) ) . '</p></div>';
         }
 
         $gallery = $property['gallery_images'] ?? [];
@@ -413,7 +413,7 @@ class ShortcodesHandler {
         $side_img_2 = $gallery[2] ?? ( $gallery[1] ?? ( $gallery[0] ?? $main_img ) );
 
         $raw_status   = strtolower( trim( $property['status'] ?? 'for_sale' ) );
-        $status_label = ucwords( str_replace( '_', ' ', $raw_status ) );
+        $status_label = I18n::trans_status( $raw_status );
         $status_class = 'status-' . sanitize_html_class( $raw_status );
 
         $currency = (string) get_option( 'zabun_connect_currency_symbol', '€' );
@@ -423,9 +423,16 @@ class ShortcodesHandler {
 
         $price_formatted = ! empty( $property['price'] ) 
             ? $currency . ' ' . number_format( (float) $property['price'], 0, ',', '.' ) 
-            : __( 'Price on request', 'zabun-connect' );
+            : I18n::trans( 'price_on_request' );
         
-        $freq = ! empty( $property['price_frequency'] ) ? ' / ' . esc_html( $property['price_frequency'] ) : '';
+        $freq_raw = ! empty( $property['price_frequency'] ) ? strtolower( trim( $property['price_frequency'] ) ) : '';
+        $freq_label = $freq_raw;
+        if ( $freq_raw === 'month' || $freq_raw === 'm' || $freq_raw === 'maand' || $freq_raw === 'mois' ) {
+            $freq_label = I18n::trans( 'unit_month' );
+        } elseif ( $freq_raw === 'year' || $freq_raw === 'y' || $freq_raw === 'jaar' || $freq_raw === 'an' ) {
+            $freq_label = I18n::trans( 'unit_year' );
+        }
+        $freq = ! empty( $freq_label ) ? ' / ' . esc_html( $freq_label ) : '';
 
         $raw         = $property['raw_data'] ?? [];
         $description = $this->extract_multilingual_string( $raw['description'] ?? ( $raw['remarks'] ?? ( $raw['description_short'] ?? '' ) ) );
@@ -440,7 +447,13 @@ class ShortcodesHandler {
 
         // Agent information with intelligent fallback
         $agent_name   = $custom_options['agent_name'] ?? ( $raw['agent_name'] ?? get_bloginfo( 'name' ) );
-        $agent_role   = $custom_options['agent_role'] ?? ( $raw['agent_role'] ?? __( 'Listing Agent', 'zabun-connect' ) );
+        $raw_role     = $custom_options['agent_role'] ?? ( $raw['agent_role'] ?? '' );
+        if ( empty( $raw_role ) || strcasecmp( trim( $raw_role ), 'Listing agent' ) === 0 || strcasecmp( trim( $raw_role ), 'Listing Agent' ) === 0 ) {
+            $agent_role = I18n::trans( 'listing_agent' );
+        } else {
+            $agent_role = $raw_role;
+        }
+
         $agent_phone  = $custom_options['agent_phone'] ?? ( $raw['agent_phone'] ?? ( $raw['contact_phone'] ?? '' ) );
         $agent_email  = $custom_options['agent_email'] ?? ( $raw['agent_email'] ?? ( $raw['contact_email'] ?? get_option( 'admin_email' ) ) );
         $agent_avatar = $custom_options['agent_avatar'] ?? ( $raw['agent_avatar'] ?? '' );
@@ -448,6 +461,9 @@ class ShortcodesHandler {
         if ( ! empty( $agent_name ) ) {
             $parts = explode( ' ', trim( $agent_name ) );
             $agent_init = strtoupper( substr( $parts[0], 0, 1 ) . ( isset( $parts[1] ) ? substr( $parts[1], 0, 1 ) : '' ) );
+        }
+        if ( empty( $agent_init ) ) {
+            $agent_init = 'ZB';
         }
 
         $address_full = trim( ( $property['address'] ? $property['address'] . ', ' : '' ) . ( $property['postal_code'] ? $property['postal_code'] . ' ' : '' ) . $property['city'] );
@@ -484,9 +500,9 @@ class ShortcodesHandler {
                     <?php endif; ?>
 
                     <?php if ( $photo_count > 0 ) : ?>
-                        <button type="button" class="photo-count-badge" data-index="0" aria-label="<?php esc_attr_e( 'View all photos', 'zabun-connect' ); ?>">
+                        <button type="button" class="photo-count-badge" data-index="0" aria-label="<?php echo esc_attr( I18n::trans( 'view_all_photos' ) ); ?>">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                            <span>1 / <?php echo esc_html( $photo_count ); ?> <?php esc_html_e( 'photos', 'zabun-connect' ); ?></span>
+                            <span>1 / <?php echo esc_html( $photo_count ); ?> <?php echo esc_html( I18n::trans( 'photos' ) ); ?></span>
                         </button>
                     <?php endif; ?>
                 </div>
@@ -494,7 +510,7 @@ class ShortcodesHandler {
                 <div class="zabun-detail-gallery has-placeholder">
                     <span class="zabun-card-tag <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
                     <div class="zabun-placeholder-img">
-                        <span><?php esc_html_e( 'No Image Available', 'zabun-connect' ); ?></span>
+                        <span><?php echo esc_html( I18n::trans( 'no_image_available' ) ); ?></span>
                     </div>
                 </div>
             <?php endif; ?>
@@ -519,12 +535,12 @@ class ShortcodesHandler {
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_beds; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
                             <span class="num"><?php echo ! empty( $property['bedrooms'] ) && (int) $property['bedrooms'] > 0 ? (int) $property['bedrooms'] : '-'; ?></span>
-                            <span class="label"><?php esc_html_e( 'Beds', 'zabun-connect' ); ?></span>
+                            <span class="label"><?php echo esc_html( I18n::trans( 'beds' ) ); ?></span>
                         </div>
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_baths; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
                             <span class="num"><?php echo ! empty( $property['bathrooms'] ) && (int) $property['bathrooms'] > 0 ? (int) $property['bathrooms'] : '-'; ?></span>
-                            <span class="label"><?php esc_html_e( 'Baths', 'zabun-connect' ); ?></span>
+                            <span class="label"><?php echo esc_html( I18n::trans( 'baths' ) ); ?></span>
                         </div>
                         <div class="zabun-detail-fact">
                             <span class="zabun-icon-wrap"><?php echo $icon_area; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -534,57 +550,57 @@ class ShortcodesHandler {
                                     : ( ! empty( $property['land_area'] ) && (float) $property['land_area'] > 0 ? round( (float) $property['land_area'] ) : '-' );
                                 echo esc_html( $detail_area ); 
                             ?></span>
-                            <span class="label"><?php esc_html_e( 'm²', 'zabun-connect' ); ?></span>
+                            <span class="label"><?php echo esc_html( I18n::trans( 'unit_sqm' ) ); ?></span>
                         </div>
                     </div>
 
                     <!-- Description Section -->
                     <?php if ( ! empty( $description ) ) : ?>
-                        <h2 class="zabun-section-heading"><?php esc_html_e( 'Description', 'zabun-connect' ); ?></h2>
+                        <h2 class="zabun-section-heading"><?php echo esc_html( I18n::trans( 'description' ) ); ?></h2>
                         <div class="zabun-detail-description">
                             <?php echo wp_kses_post( wpautop( $description ) ); ?>
                         </div>
                     <?php endif; ?>
 
                     <!-- Key Details Spec Table -->
-                    <h2 class="zabun-section-heading"><?php esc_html_e( 'Key details', 'zabun-connect' ); ?></h2>
+                    <h2 class="zabun-section-heading"><?php echo esc_html( I18n::trans( 'key_details' ) ); ?></h2>
                     <table class="zabun-spec-table zabun-facts-table">
                         <tbody>
                             <tr>
-                                <td><?php esc_html_e( 'Reference', 'zabun-connect' ); ?></td>
+                                <td><?php echo esc_html( I18n::trans( 'reference' ) ); ?></td>
                                 <td><?php echo esc_html( $property['external_id'] ); ?></td>
                             </tr>
                             <?php if ( ! empty( $property['property_type'] ) ) : ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'Property type', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'property_type' ) ); ?></td>
                                     <td><?php echo esc_html( $property['property_type'] ); ?></td>
                                 </tr>
                             <?php endif; ?>
                             <tr>
-                                <td><?php esc_html_e( 'Status', 'zabun-connect' ); ?></td>
+                                <td><?php echo esc_html( I18n::trans( 'status' ) ); ?></td>
                                 <td><?php echo esc_html( $status_label ); ?></td>
                             </tr>
                             <?php if ( ! empty( $raw['year_built'] ) || ! empty( $raw['construction_year'] ) ) : ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'Year built', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'year_built' ) ); ?></td>
                                     <td><?php echo esc_html( $raw['year_built'] ?? $raw['construction_year'] ); ?></td>
                                 </tr>
                             <?php endif; ?>
                             <?php if ( ! empty( $property['living_area'] ) ) : ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'Habitable area', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'habitable_area' ) ); ?></td>
                                     <td><?php echo esc_html( $property['living_area'] ); ?> m²</td>
                                 </tr>
                             <?php endif; ?>
                             <?php if ( ! empty( $property['land_area'] ) ) : ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'Plot size', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'plot_size' ) ); ?></td>
                                     <td><?php echo esc_html( $property['land_area'] ); ?> m²</td>
                                 </tr>
                             <?php endif; ?>
                             <?php if ( ! empty( $property['epc_value'] ) ) : ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'EPC label', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'epc_label' ) ); ?></td>
                                     <td><?php echo esc_html( $property['epc_value'] ); ?></td>
                                 </tr>
                             <?php endif; ?>
@@ -593,7 +609,7 @@ class ShortcodesHandler {
                             if ( ! empty( $avail_str ) ) : 
                             ?>
                                 <tr>
-                                    <td><?php esc_html_e( 'Availability', 'zabun-connect' ); ?></td>
+                                    <td><?php echo esc_html( I18n::trans( 'availability' ) ); ?></td>
                                     <td><?php echo esc_html( $avail_str ); ?></td>
                                 </tr>
                             <?php endif; ?>
@@ -602,12 +618,15 @@ class ShortcodesHandler {
 
                     <!-- Features List Section -->
                     <?php if ( ! empty( $features ) ) : ?>
-                        <h2 class="zabun-section-heading"><?php esc_html_e( 'Features', 'zabun-connect' ); ?></h2>
+                        <h2 class="zabun-section-heading"><?php echo esc_html( I18n::trans( 'features' ) ); ?></h2>
                         <ul class="zabun-features-list">
                             <?php foreach ( $features as $feat ) : ?>
                                 <li>
                                     <span class="feature-check-icon"><?php echo $icon_check; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-                                    <span><?php echo esc_html( is_array( $feat ) ? ( $feat['name'] ?? '' ) : $feat ); ?></span>
+                                    <span><?php 
+                                        $feat_name = is_array( $feat ) ? ( $feat['name'] ?? '' ) : $feat;
+                                        echo esc_html( $this->extract_multilingual_string( $feat_name ) ); 
+                                    ?></span>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -646,10 +665,13 @@ class ShortcodesHandler {
                         <?php endif; ?>
 
                         <?php
-                        $inquiry_url = $custom_options['inquiry_url'] ?? ( ! empty( $agent_email ) ? 'mailto:' . esc_attr( $agent_email ) . '?subject=' . rawurlencode( 'Request a viewing: ' . $property['title'] ) : '#inquiry' );
+                        $raw_inquiry = $custom_options['inquiry_btn_text'] ?? null;
+                        $btn_text = ( empty( $raw_inquiry ) || strcasecmp( trim( $raw_inquiry ), 'Request a viewing' ) === 0 )
+                            ? I18n::trans( 'request_viewing' )
+                            : $raw_inquiry;
                         ?>
                         <a href="<?php echo esc_url( $inquiry_url ); ?>" class="zabun-btn zabun-btn-primary">
-                            <?php echo esc_html( $custom_options['inquiry_btn_text'] ?? __( 'Request a viewing', 'zabun-connect' ) ); ?>
+                            <?php echo esc_html( $btn_text ); ?>
                         </a>
 
                         <?php
@@ -672,7 +694,7 @@ class ShortcodesHandler {
 
                         <?php if ( $show_brochure ) : ?>
                             <a href="<?php echo esc_url( $brochure_url ); ?>" class="zabun-btn zabun-btn-ghost" target="_blank" rel="noopener">
-                                <?php esc_html_e( 'Download brochure', 'zabun-connect' ); ?>
+                                <?php echo esc_html( I18n::trans( 'download_brochure' ) ); ?>
                             </a>
                         <?php endif; ?>
 
@@ -683,7 +705,7 @@ class ShortcodesHandler {
                     </div>
 
                     <p class="zabun-ref-notice">
-                        <?php echo sprintf( esc_html__( 'Ref. %s · synced from Zabun', 'zabun-connect' ), esc_html( $property['external_id'] ) ); ?>
+                        <?php echo sprintf( esc_html( I18n::trans( 'synced_notice' ) ), esc_html( $property['external_id'] ) ); ?>
                     </p>
                 </div>
             </div>
@@ -693,13 +715,13 @@ class ShortcodesHandler {
                 <div class="zabun-lightbox" id="zabun-lightbox" aria-hidden="true" style="display: none;">
                     <div class="zabun-lightbox-overlay"></div>
                     <div class="zabun-lightbox-content">
-                        <button type="button" class="zabun-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'zabun-connect' ); ?>">
+                        <button type="button" class="zabun-lightbox-close" aria-label="<?php echo esc_attr( I18n::trans( 'close' ) ); ?>">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                         </button>
-                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-prev" aria-label="<?php esc_attr_e( 'Previous', 'zabun-connect' ); ?>">
+                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-prev" aria-label="<?php echo esc_attr( I18n::trans( 'previous' ) ); ?>">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                         </button>
-                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-next" aria-label="<?php esc_attr_e( 'Next', 'zabun-connect' ); ?>">
+                        <button type="button" class="zabun-lightbox-nav zabun-lightbox-next" aria-label="<?php echo esc_attr( I18n::trans( 'next' ) ); ?>">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
                         </button>
                         <div class="zabun-lightbox-img-wrap">
@@ -711,7 +733,7 @@ class ShortcodesHandler {
                             </div>
                             <div class="zabun-lightbox-thumbs">
                                 <?php foreach ( $gallery as $idx => $img_url ) : ?>
-                                    <button type="button" class="zabun-thumb <?php echo $idx === 0 ? 'active' : ''; ?>" data-index="<?php echo esc_attr( $idx ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Photo %d', 'zabun-connect' ), $idx + 1 ) ); ?>">
+                                    <button type="button" class="zabun-thumb <?php echo $idx === 0 ? 'active' : ''; ?>" data-index="<?php echo esc_attr( $idx ); ?>" aria-label="<?php echo esc_attr( sprintf( I18n::trans( 'photo_n' ), $idx + 1 ) ); ?>">
                                         <img src="<?php echo esc_url( $img_url ); ?>" alt="" />
                                     </button>
                                 <?php endforeach; ?>
@@ -756,24 +778,20 @@ class ShortcodesHandler {
         $types    = $repo->get_distinct_types();
         $db_statuses = $repo->get_distinct_statuses();
 
-        $status_label_map = [
-            'for_sale' => __( 'For sale', 'zabun-connect' ),
-            'for_rent' => __( 'For rent', 'zabun-connect' ),
-            'sold'     => __( 'Sold', 'zabun-connect' ),
-            'rented'   => __( 'Rented', 'zabun-connect' ),
-        ];
-
+        $status_keys = [ 'for_sale', 'for_rent', 'sold', 'rented' ];
         $statuses = [];
         if ( ! empty( $db_statuses ) ) {
             foreach ( $db_statuses as $st ) {
                 $st_key = strtolower( trim( $st ) );
                 if ( ! empty( $st_key ) ) {
-                    $statuses[ $st_key ] = $status_label_map[ $st_key ] ?? ucwords( str_replace( '_', ' ', $st_key ) );
+                    $statuses[ $st_key ] = I18n::trans_status( $st_key );
                 }
             }
         }
         if ( empty( $statuses ) ) {
-            $statuses = $status_label_map;
+            foreach ( $status_keys as $st_key ) {
+                $statuses[ $st_key ] = I18n::trans_status( $st_key );
+            }
         }
 
         $curr_search    = sanitize_text_field( $_GET['zabun_search'] ?? '' );
@@ -794,7 +812,7 @@ class ShortcodesHandler {
         $db_max_price = $price_range['max'];
 
         $price_options = [
-            '' => __( 'Any', 'zabun-connect' ),
+            '' => I18n::trans( 'any' ),
         ];
 
         $milestones = [];
@@ -857,15 +875,15 @@ class ShortcodesHandler {
                 <!-- Hero Input Row -->
                 <div class="zabun-hero-row">
                     <div class="zabun-field field-text">
-                        <label for="hs-search"><?php esc_html_e( 'Keyword or location', 'zabun-connect' ); ?></label>
+                        <label for="hs-search"><?php echo esc_html( I18n::trans( 'keyword_or_location' ) ); ?></label>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                        <input class="zabun-control" id="hs-search" type="text" name="zabun_search" placeholder="<?php esc_attr_e( 'Address, city, reference...', 'zabun-connect' ); ?>" value="<?php echo esc_attr( $curr_search ); ?>" />
+                        <input class="zabun-control" id="hs-search" type="text" name="zabun_search" placeholder="<?php echo esc_attr( I18n::trans( 'search_placeholder' ) ); ?>" value="<?php echo esc_attr( $curr_search ); ?>" />
                     </div>
 
                     <div class="zabun-field">
-                        <label for="hs-city"><?php esc_html_e( 'City', 'zabun-connect' ); ?></label>
+                        <label for="hs-city"><?php echo esc_html( I18n::trans( 'city' ) ); ?></label>
                         <select class="zabun-control" id="hs-city" name="zabun_city">
-                            <option value=""><?php esc_html_e( 'All cities', 'zabun-connect' ); ?></option>
+                            <option value=""><?php echo esc_html( I18n::trans( 'all_cities' ) ); ?></option>
                             <?php foreach ( $cities as $c ) : ?>
                                 <option value="<?php echo esc_attr( $c ); ?>" <?php selected( $curr_city, $c ); ?>>
                                     <?php echo esc_html( $c ); ?>
@@ -875,19 +893,19 @@ class ShortcodesHandler {
                     </div>
 
                     <div class="zabun-field">
-                        <label for="hs-type"><?php esc_html_e( 'Property type', 'zabun-connect' ); ?></label>
+                        <label for="hs-type"><?php echo esc_html( I18n::trans( 'property_type' ) ); ?></label>
                         <select class="zabun-control" id="hs-type" name="zabun_type">
-                            <option value=""><?php esc_html_e( 'All types', 'zabun-connect' ); ?></option>
+                            <option value=""><?php echo esc_html( I18n::trans( 'all_types' ) ); ?></option>
                             <?php foreach ( $types as $tp ) : ?>
                                 <option value="<?php echo esc_attr( $tp ); ?>" <?php selected( $curr_type, $tp ); ?>>
-                                    <?php echo esc_html( $tp ); ?>
+                                    <?php echo esc_html( I18n::trans_type( $tp ) ); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
                     <div class="zabun-field">
-                        <label for="hs-maxprice"><?php esc_html_e( 'Max price', 'zabun-connect' ); ?></label>
+                        <label for="hs-maxprice"><?php echo esc_html( I18n::trans( 'max_price' ) ); ?></label>
                         <select class="zabun-control" id="hs-maxprice" name="zabun_max_price">
                             <?php foreach ( $price_options as $p_val => $p_label ) : ?>
                                 <option value="<?php echo esc_attr( $p_val ); ?>" <?php selected( $curr_max_price, $p_val ); ?>>
@@ -899,12 +917,12 @@ class ShortcodesHandler {
 
                     <div class="zabun-hero-actions">
                         <button class="zabun-btn-more" id="more-toggle" type="button" aria-expanded="false">
-                            <span><?php esc_html_e( 'More filters', 'zabun-connect' ); ?></span>
+                            <span><?php echo esc_html( I18n::trans( 'more_filters' ) ); ?></span>
                             <svg width="11" height="7" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
                         <button class="zabun-btn-search" type="submit">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                            <span><?php esc_html_e( 'Search', 'zabun-connect' ); ?></span>
+                            <span><?php echo esc_html( I18n::trans( 'search' ) ); ?></span>
                         </button>
                     </div>
                 </div>
@@ -913,7 +931,7 @@ class ShortcodesHandler {
                 <div class="zabun-expanded-drawer" id="expanded-panel">
                     <div class="zabun-expanded-grid">
                         <div class="zabun-field">
-                            <label><?php esc_html_e( 'Min & max price', 'zabun-connect' ); ?></label>
+                            <label><?php echo esc_html( I18n::trans( 'min_max_price' ) ); ?></label>
                             <div class="zabun-range-pair">
                                 <select class="zabun-control" name="zabun_min_price">
                                     <?php foreach ( $price_options as $p_val => $p_label ) : ?>
@@ -934,9 +952,9 @@ class ShortcodesHandler {
                         </div>
 
                         <div class="zabun-field">
-                            <label><?php esc_html_e( 'Bedrooms', 'zabun-connect' ); ?></label>
+                            <label><?php echo esc_html( I18n::trans( 'bedrooms' ) ); ?></label>
                             <div class="zabun-btngroup" data-group="bedrooms">
-                                <button type="button" data-val="" class="<?php echo empty( $curr_beds ) ? 'active' : ''; ?>"><?php esc_html_e( 'Any', 'zabun-connect' ); ?></button>
+                                <button type="button" data-val="" class="<?php echo empty( $curr_beds ) ? 'active' : ''; ?>"><?php echo esc_html( I18n::trans( 'any' ) ); ?></button>
                                 <button type="button" data-val="1" class="<?php echo $curr_beds === '1' ? 'active' : ''; ?>">1+</button>
                                 <button type="button" data-val="2" class="<?php echo $curr_beds === '2' ? 'active' : ''; ?>">2+</button>
                                 <button type="button" data-val="3" class="<?php echo $curr_beds === '3' ? 'active' : ''; ?>">3+</button>
@@ -946,9 +964,9 @@ class ShortcodesHandler {
                         </div>
 
                         <div class="zabun-field">
-                            <label><?php esc_html_e( 'Bathrooms', 'zabun-connect' ); ?></label>
+                            <label><?php echo esc_html( I18n::trans( 'bathrooms' ) ); ?></label>
                             <div class="zabun-btngroup" data-group="bathrooms">
-                                <button type="button" data-val="" class="<?php echo empty( $curr_baths ) ? 'active' : ''; ?>"><?php esc_html_e( 'Any', 'zabun-connect' ); ?></button>
+                                <button type="button" data-val="" class="<?php echo empty( $curr_baths ) ? 'active' : ''; ?>"><?php echo esc_html( I18n::trans( 'any' ) ); ?></button>
                                 <button type="button" data-val="1" class="<?php echo $curr_baths === '1' ? 'active' : ''; ?>">1+</button>
                                 <button type="button" data-val="2" class="<?php echo $curr_baths === '2' ? 'active' : ''; ?>">2+</button>
                                 <button type="button" data-val="3" class="<?php echo $curr_baths === '3' ? 'active' : ''; ?>">3+</button>
@@ -956,32 +974,32 @@ class ShortcodesHandler {
                         </div>
 
                         <div class="zabun-field">
-                            <label><?php esc_html_e( 'Surface (m²)', 'zabun-connect' ); ?></label>
+                            <label><?php echo esc_html( I18n::trans( 'surface_sqm' ) ); ?></label>
                             <div class="zabun-range-pair">
-                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_min_area" placeholder="<?php echo esc_attr( $db_min_area > 0 ? sprintf( __( 'Min (%d m²)', 'zabun-connect' ), $db_min_area ) : __( 'Min', 'zabun-connect' ) ); ?>" value="<?php echo esc_attr( $curr_min_area ); ?>" />
+                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_min_area" placeholder="<?php echo esc_attr( $db_min_area > 0 ? sprintf( I18n::trans( 'min_with_unit' ), $db_min_area ) : I18n::trans( 'min' ) ); ?>" value="<?php echo esc_attr( $curr_min_area ); ?>" />
                                 <span class="to">—</span>
-                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_max_area" placeholder="<?php echo esc_attr( $db_max_area > 0 ? sprintf( __( 'Max (%d m²)', 'zabun-connect' ), $db_max_area ) : __( 'Max', 'zabun-connect' ) ); ?>" value="<?php echo esc_attr( $curr_max_area ); ?>" />
+                                <input class="zabun-control" type="number" min="0" max="<?php echo esc_attr( $db_max_area ); ?>" name="zabun_max_area" placeholder="<?php echo esc_attr( $db_max_area > 0 ? sprintf( I18n::trans( 'max_with_unit' ), $db_max_area ) : I18n::trans( 'max' ) ); ?>" value="<?php echo esc_attr( $curr_max_area ); ?>" />
                             </div>
                         </div>
                     </div>
 
                     <div class="zabun-expanded-foot">
                         <div class="zabun-sort-line">
-                            <label for="hs-sort"><?php esc_html_e( 'Sort by', 'zabun-connect' ); ?></label>
+                            <label for="hs-sort"><?php echo esc_html( I18n::trans( 'sort_by' ) ); ?></label>
                             <select class="zabun-control" id="hs-sort" name="zabun_orderby">
-                                <option value="date" <?php selected( $curr_order, 'date' ); ?>><?php esc_html_e( 'Newest', 'zabun-connect' ); ?></option>
-                                <option value="price_asc" <?php selected( $curr_order, 'price_asc' ); ?>><?php esc_html_e( 'Price: Low to High', 'zabun-connect' ); ?></option>
-                                <option value="price_desc" <?php selected( $curr_order, 'price_desc' ); ?>><?php esc_html_e( 'Price: High to Low', 'zabun-connect' ); ?></option>
-                                <option value="living_area_desc" <?php selected( $curr_order, 'living_area_desc' ); ?>><?php esc_html_e( 'Surface: Large to Small', 'zabun-connect' ); ?></option>
+                                <option value="date" <?php selected( $curr_order, 'date' ); ?>><?php echo esc_html( I18n::trans( 'sort_newest' ) ); ?></option>
+                                <option value="price_asc" <?php selected( $curr_order, 'price_asc' ); ?>><?php echo esc_html( I18n::trans( 'sort_price_asc' ) ); ?></option>
+                                <option value="price_desc" <?php selected( $curr_order, 'price_desc' ); ?>><?php echo esc_html( I18n::trans( 'sort_price_desc' ) ); ?></option>
+                                <option value="living_area_desc" <?php selected( $curr_order, 'living_area_desc' ); ?>><?php echo esc_html( I18n::trans( 'sort_area_desc' ) ); ?></option>
                             </select>
                         </div>
                         <div class="zabun-foot-actions">
                             <button class="zabun-link-reset" type="reset">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 21v-5h5"/></svg>
-                                <span><?php esc_html_e( 'Reset filters', 'zabun-connect' ); ?></span>
+                                <span><?php echo esc_html( I18n::trans( 'reset_filters' ) ); ?></span>
                             </button>
                             <button class="zabun-btn-search" type="submit">
-                                <span><?php esc_html_e( 'Apply filters', 'zabun-connect' ); ?></span>
+                                <span><?php echo esc_html( I18n::trans( 'apply_filters' ) ); ?></span>
                             </button>
                         </div>
                     </div>

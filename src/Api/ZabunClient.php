@@ -181,7 +181,8 @@ class ZabunClient {
      * @throws ZabunException
      */
     public function fetch_listings( array $params = [] ): array {
-        $media_id = $this->media_id ?: self::DEFAULT_MEDIA_ID;
+        $sync_source = (string) get_option( 'zabun_connect_sync_source', 'all' );
+        $media_id    = $this->media_id ?: self::DEFAULT_MEDIA_ID;
         
         $body = [
             'paging' => [
@@ -190,13 +191,17 @@ class ZabunClient {
             ],
         ];
 
-        // Try media sync endpoint first (standard for CMS website integration)
-        try {
-            return $this->request( "api/v1/property/media-sync/{$media_id}", 'POST', [], $body );
-        } catch ( ZabunException $e ) {
-            // Fallback to property search if media sync is not configured for this media_id
-            return $this->request( 'api/v1/property/search', 'POST', [], $body );
+        // If explicitly set to media_sync, query the specific media ID feed (e.g. 354 items)
+        if ( $sync_source === 'media_sync' ) {
+            try {
+                return $this->request( "api/v1/property/media-sync/{$media_id}", 'POST', [], $body );
+            } catch ( ZabunException $e ) {
+                return $this->request( 'api/v1/property/search', 'POST', [], $body );
+            }
         }
+
+        // Default: query the search endpoint (returns all 838 CRM listings)
+        return $this->request( 'api/v1/property/search', 'POST', [], $body );
     }
 
     /**
